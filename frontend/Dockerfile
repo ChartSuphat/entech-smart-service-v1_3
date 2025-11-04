@@ -1,12 +1,12 @@
-FROM node:20-alpine
+FROM node:20-alpine as build
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with npm ci (faster, more reliable for CI/CD)
-RUN npm ci
+# Install dependencies
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -14,10 +14,15 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Install serve to run the built app
-RUN npm install -g serve
+# Production stage with nginx
+FROM nginx:alpine
+
+# Copy built files to nginx
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 5050
 
-# Serve the built app on port 5050
-CMD ["serve", "-s", "dist", "-l", "5050", "--no-clipboard"]
+CMD ["nginx", "-g", "daemon off;"]
