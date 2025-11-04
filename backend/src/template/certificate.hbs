@@ -582,10 +582,10 @@
                     {{#each certificate.calibrationData}}
                         <tr>
                             <td class="text-left">{{gasType}} {{standardValue}} {{gasUnit}}</td>
-                            <td>{{formatNumber standardValue 3}}</td>
+                            <td>{{formatNumber standardValue 1}}</td>
                             <td>{{formatNumber meanValue 1}}</td>
                             <td>{{formatNumber error 1}}</td>
-                            <td>{{formatNumber expandedUncertainty 3}}</td>
+                            <td>{{formatNumber expandedUncertainty 2}}</td>
                         </tr>
                     {{/each}}
                     <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
@@ -613,10 +613,10 @@
                     {{#each certificate.adjustedData}}
                         <tr>
                             <td class="text-left">{{gasType}} {{standardValue}} {{gasUnit}}</td>
-                            <td>{{formatNumber standardValue 3}}</td>
+                            <td>{{formatNumber standardValue 1}}</td>
                             <td>{{formatNumber meanValue 1}}</td>
                             <td>{{formatNumber error 1}}</td>
-                            <td>{{formatNumber expandedUncertainty 3}}</td>
+                            <td>{{formatNumber expandedUncertainty 2}}</td>
                         </tr>
                     {{/each}}
                     <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
