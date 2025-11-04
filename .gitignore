@@ -4,9 +4,6 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# Package manager files
-package.json
-
 # Environment variables
 .env
 .env.local
