@@ -1,4 +1,4 @@
-FROM node:20-alpine as build
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -14,15 +14,10 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Production stage with nginx
-FROM nginx:alpine
-
-# Copy built files to nginx
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Install serve to run the built app
+RUN npm install -g serve
 
 EXPOSE 5050
 
-CMD ["nginx", "-g", "daemon off;"]
+# Serve the built app on port 5050
+CMD ["serve", "-s", "dist", "-l", "5050", "--no-clipboard"]
