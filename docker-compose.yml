@@ -1,0 +1,87 @@
+services:
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: entechsmart_db
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: 1555
+  #     POSTGRES_DB: entechSmart_db
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - app-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      network: host
+    container_name: entechsmart_backend
+    env_file:
+      - ./backend/.env.production
+    environment:
+      # - DATABASE_URL=postgresql://postgres:Entech999@postgres:5432/entechSmart_db
+      - API_URL=http://localhost:5050
+      - UPLOAD_PATH=/app/uploads
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    volumes:
+      - uploads_data:/app/uploads
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+    network_mode: host
+    # command: /bin/sh -c "npm run migrate && npm start"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      network: host
+    container_name: entechsmart_frontend
+    environment:
+      - VITE_API_URL=/api
+    depends_on:
+      - backend
+    network_mode: host
+
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: entechsmart_nginx
+  #   ports:
+  #     - "5050:80"
+  #   volumes:
+  #     - uploads_data:/usr/share/nginx/html/uploads:ro
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: entechsmart_pgadmin
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   ports:
+  #     - "8999:80"
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     - db
+
+# networks:
+#   app-network:
+#     driver: bridge
+
+volumes:
+  # postgres_data:
+  uploads_data:

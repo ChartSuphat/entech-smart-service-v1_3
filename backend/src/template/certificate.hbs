@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibration Certificate - {{certificate.certificateNo}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.3;
+            color: #000;
+            background: white;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .certificate-page {
+            width: 210mm;
+            min-height: 297mm;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 15mm;
+            background: white;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .draft-watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            font-weight: bold;
+            color: rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        
+
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+
+            .certificate-page {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 15mm;
+                page-break-inside: avoid;
+                box-shadow: none;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .draft-watermark {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+}
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            height: 60px;
+        }
+
+        .logo {
+            max-height: 70px;
+            width: auto;
+        }
+
+        .logo-fallback {
+            font-size: 48px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo-entech {
+            color: #1E88E5;
+        }
+
+        .logo-si {
+            color: #FF9800;
+            margin-left: 3px;
+        }
+
+        .header-title {
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            text-align: right;
+        }
+
+        .certificate-info-section {
+            text-align: right;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+
+        .certificate-info-section div {
+            margin-bottom: 2px;
+        }
+
+        .info-section {
+            margin-bottom: 12px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .info-table td {
+            padding: 2px 8px;
+            vertical-align: top;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .info-table td:first-child {
+            width: 35%;
+            font-weight: normal;
+        }
+
+        .info-table td:nth-child(2) {
+            width: 1%;
+            text-align: left;
+            padding-left: 2px;
+        }
+
+        .info-table td:nth-child(3) {
+            font-weight: normal;
+            width: 63%;
+            padding-right: 30px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10px;
+            border: 1px solid #000;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: none;
+            border-right: 1px solid #000;
+            padding: 8px 4px;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 1.2;
+            min-height: 25px;
+        }
+
+        .data-table th:last-child,
+        .data-table td:last-child {
+            border-right: none;
+        }
+
+        .data-table thead th {
+            border-bottom: 1px solid #000;
+        }
+
+        .data-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .data-table td.text-left {
+            text-align: left;
+            padding-left: 8px;
+        }
+
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 60px;
+            padding-top: 15px;
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .signature-block {
+            text-align: center;
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 50px;
+            margin-bottom: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+        }
+
+        .signature-image {
+            max-width: 250px;
+            max-height: 60px;
+            object-fit: contain;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+
+        .signature-title {
+            font-size: 10px;
+        }
+
+        .disclaimers {
+            margin: 10px 0;
+            font-size: 12px;
+            line-height: 1.5;
+            text-align: justify;
+        }
+
+        .disclaimers p {
+            margin-bottom: 5px;
+            text-indent: 12px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+
+        .mb-15 {
+            margin-bottom: 15px;
+        }
+
+        .section-group {
+            margin-bottom: 15px;
+        }
+
+        .ambient-text {
+            margin-bottom: 2px;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+
+<body>
+    {{#ifTrue isDraft}}
+    <div class="draft-watermark">DRAFT</div>
+{{/ifTrue}}
+
+    <div class="certificate-page">
+        <div class="header">
+            <div>
+                {{#if company.logo}}
+                    <img src="{{company.logo}}" alt="ENTECH SI" class="logo">
+                {{else}}
+                    <div class="logo-fallback">
+                        <span class="logo-entech">ENTECH</span>
+                        <span class="logo-si">SI</span>
+                    </div>
+                {{/if}}
+            </div>
+            <div class="header-title">
+                <h1>Calibration Certificate</h1>
+            </div>
+        </div>
+
+        <div class="certificate-info-section" style="padding-right: 30px;">
+            <div><strong>Certificate No.:</strong> {{certificate.certificateNo}}</div>
+            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "DD-MMM-YY"}}</div>
+        </div>
+
+        <div class="section-group">
+            <table class="info-table">
+                <tr>
+                    <td>Instrument Description</td>
+                    <td>:</td>
+                    <td>{{certificate.equipment.instrumentDescription}}</td>
+                </tr>
+                <tr>
+                    <td>Instrument Model</td>
+                    <td>:</td>
+                    <td>{{certificate.equipment.instrumentModel}}</td>
+                </tr>
+                <tr>
+                    <td>Instrument Serial No.</td>
+                    <td>:</td>
+                    <td>{{certificate.equipment.instrumentSerialNo}}</td>
+                </tr>
+                <tr>
+                    <td>ID No. or Control No.</td>
+                    <td>:</td>
+                    <td>{{#if certificate.equipment.idNoOrControlNo}}{{certificate.equipment.idNoOrControlNo}}{{else}}-{{/if}}</td>
+                </tr>
+                <tr>
+                    <td>Manufacturer</td>
+                    <td>:</td>
+                    <td>{{certificate.equipment.manufacturer}}</td>
+                </tr>
+                <tr>
+                    <td>Probe description</td>
+                    <td>:</td>
+                    <td>{{certificate.probe.probeDescription}}</td>
+                </tr>
+                <tr>
+                    <td>Probe model</td>
+                    <td>:</td>
+                    <td>{{certificate.probe.probeModel}}</td>
+                </tr>
+                <tr>
+                    <td>Probe serial</td>
+                    <td>:</td>
+                    <td>{{certificate.probe.probeSN}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-group">
+            <table class="info-table">
+                <tr>
+                    <td>Customer Name</td>
+                    <td>:</td>
+                    <td>{{certificate.customer.companyName}}</td>
+                </tr>
+                <tr>
+                    <td>Customer Address</td>
+                    <td>:</td>
+                    <td>{{certificate.customer.address}}</td>
+                </tr>
+                <tr>
+                    <td>Total Pages of Certificate</td>
+                    <td>:</td>
+                    <td>{{calculations.totalPages}} Pages</td>
+                </tr>
+                <tr>
+                    <td>Receiving No.</td>
+                    <td>:</td>
+                    <td>{{calculations.receivingNo}}</td>
+                </tr>
+                <tr>
+                    <td>Receiving Date</td>
+                    <td>:</td>
+                    <td>{{formatDate certificate.dateOfCalibration "DD-MMM-YY"}}</td>
+                </tr>
+                <tr>
+                    <td>Parameter of Calibration</td>
+                    <td>:</td>
+                    <td>{{calculations.parameterOfCalibration}}</td>
+                </tr>
+                <tr>
+                    <td>Condition of UUC</td>
+                    <td>:</td>
+                    <td>{{calculations.conditionOfUUC}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-group">
+            <table class="info-table">
+                <tr>
+                    <td>Ambient condition</td>
+                    <td>:</td>
+                    <td>
+                        <div class="ambient-text">All of the measurement were carried out in the working area</div>
+                        <div class="ambient-text">Temperature      : {{formatNumber certificate.ambientConditions.temperature 0}} ± 15 °C</div>
+                        <div class="ambient-text">Humidity         : {{formatNumber certificate.ambientConditions.humidity 0}} ± 25 %RH</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-group">
+            <table class="info-table">
+                <tr>
+                    <td>Calibration place</td>
+                    <td>:</td>
+                    <td>{{certificate.calibrationPlace}}</td>
+                </tr>
+                <tr>
+                    <td>Calibration procedure no.</td>
+                    <td>:</td>
+                    <td>{{certificate.procedureNo}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="disclaimers">
+            <p><em>The calibration certificate expanded uncertainty of measurement is stated as the standard uncertainty of measurement Multiplied by coverage factor k=2, which for a normal distribution corresponds to a coverage probability of approximately 95%</em></p>
+            <p><em>This certificate is applied only to item under test Environmental condition.</em></p>
+            <p><em>This Calibration Certificate may not be reproduced other than in full except with the permission of the issuing laboratory Calibration certificates without signature and seal are not valid.</em></p>
+            <p><em>This calibration certificate documents are traceability to national standard, which realize the unit of measurement according to the International System of Units (SI)</em></p>
+        </div>
+
+        <div class="mb-15">
+            <table class="info-table">
+                <tr>
+                    <td>Date of Calibration</td>
+                    <td>:</td>
+                    <td>{{formatDate certificate.dateOfCalibration "DD-MMM-YY"}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="signature-section">
+            <div class="signature-block">
+                <div class="signature-line">
+                    {{#if signatures.technicianSignature}}
+                        <img src="{{signatures.technicianSignature}}" alt="Technician Signature" class="signature-image">
+                    {{/if}}
+                </div>
+                <div class="signature-name">{{signatures.technicianName}}</div>
+                <div class="signature-title">{{signatures.technicianTitle}}</div>
+            </div>
+
+            <div class="signature-block">
+                <div class="signature-line">
+                    {{#if signatures.approverSignature}}
+                        <img src="{{signatures.approverSignature}}" alt="Approver Signature" class="signature-image">
+                    {{/if}}
+                </div>
+                <div class="signature-name">{{signatures.approverName}}</div>
+                <div class="signature-title">{{signatures.approverTitle}}</div>
+            </div>
+        </div>
+
+        <div style="position: absolute; bottom: 22mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
+            <div>FM-CL-09-C Rev.8</div>
+            <div>Page 1 of {{calculations.totalPages}}</div>
+            <div>Issued Date {{formatDate certificate.dateOfIssue "DD/MM/YY"}}</div>
+        </div>
+
+        <div style="position: absolute; bottom: 18.5mm; left: 15mm; right: 15mm; text-align: left; font-size: 9px; font-weight: bold;">
+            ENTECH SI CO.,LTD.
+        </div>
+
+        <div style="position: absolute; bottom: 17mm; left: 15mm; right: 15mm; border-bottom: 1px solid #000;"></div>
+
+        <div style="position: absolute; bottom: 8mm; left: 15mm; right: 15mm; text-align: center; font-size: 10px; line-height: 1.2;">
+            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.0-2779-8855 info@entechsi.com</div>
+            <div>Tax ID :0105565020602 www.entechsi.com</div>
+        </div>
+    </div>
+
+    <div class="certificate-page page-break">
+        {{#ifTrue isDraft}}
+            <div class="draft-watermark">DRAFT</div>
+        {{/ifTrue}}
+
+        <div class="header">
+            <div>
+                {{#if company.logo}}
+                    <img src="{{company.logo}}" alt="ENTECH SI" class="logo">
+                {{else}}
+                    <div class="logo-fallback">
+                        <span class="logo-entech">ENTECH</span>
+                        <span class="logo-si">SI</span>
+                    </div>
+                {{/if}}
+            </div>
+            <div class="header-title">
+                <h1>Calibration Certificate</h1>
+            </div>
+        </div>
+
+        <div class="certificate-info-section" style="padding-right: 30px;">
+            <div><strong>Certificate No.:</strong> {{certificate.certificateNo}}</div>
+            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "DD-MMM-YY"}}</div>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Standard Reference (Table 1)</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Standard</th>
+                        <th>Reference No.</th>
+                        <th>Vendor</th>
+                        <th>Due date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each standardReference}}
+                        <tr>
+                            <td class="text-left">{{standard}} {{gasUnit}}</td>
+                            <td>{{referenceNo}}</td>
+                            <td>{{vendor}}</td>
+                            <td>{{dueDate}}</td>
+                        </tr>
+                    {{/each}}
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Measured room conditions</h4>
+            <div style="font-size: 10px; margin-bottom: 10px;">
+                <span style="margin-right: 20px;">Temperature: {{formatNumber certificate.ambientConditions.temperature 1}} °C</span>
+                <span style="margin-right: 20px;">Humidity: {{formatNumber certificate.ambientConditions.humidity 1}} %RH</span>
+                <span>Pressure: {{formatNumber certificate.ambientConditions.pressure 1}} mbar</span>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Calibration conditions</h4>
+            <div style="font-size: 10px; margin-bottom: 10px;">
+                <span style="margin-right: 20px;">Gas Temperature: {{formatNumber certificate.ambientConditions.gasTemperature 1}} °C</span>
+                <span style="margin-right: 20px;">Flow rate: {{formatNumber certificate.ambientConditions.flowRate 0}} mL/min</span>
+                <span>Gas pressure: {{formatNumber certificate.ambientConditions.gasPressure 1}} mbar</span>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Calibration Results (before adjustment) (Table 2)</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Parameter of Standard</th>
+                        <th>Standard Values</th>
+                        <th>Mean of UUC</th>
+                        <th>Error</th>
+                        <th>±Uncertainty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each certificate.calibrationData}}
+                        <tr>
+                            <td class="text-left">{{gasType}} {{standardValue}} {{gasUnit}}</td>
+                            <td>{{formatNumber standardValue 3}}</td>
+                            <td>{{formatNumber meanValue 1}}</td>
+                            <td>{{formatNumber error 1}}</td>
+                            <td>{{formatNumber expandedUncertainty 3}}</td>
+                        </tr>
+                    {{/each}}
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        {{#if certificate.hasAdjustment}}
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Calibration Results (after adjustment) (Table 3)</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Parameter of Standard</th>
+                        <th>Standard Values</th>
+                        <th>Mean of UUC</th>
+                        <th>Error</th>
+                        <th>±Uncertainty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each certificate.adjustedData}}
+                        <tr>
+                            <td class="text-left">{{gasType}} {{standardValue}} {{gasUnit}}</td>
+                            <td>{{formatNumber standardValue 3}}</td>
+                            <td>{{formatNumber meanValue 1}}</td>
+                            <td>{{formatNumber error 1}}</td>
+                            <td>{{formatNumber expandedUncertainty 3}}</td>
+                        </tr>
+                    {{/each}}
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+
+        {{#if certificate.remarks}}
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Remark:</h4>
+            <div style="font-size: 10px; line-height: 1.4; white-space: pre-line;">
+                {{certificate.remarks}}
+            </div>
+        </div>
+        {{/if}}
+
+        <div style="text-align: center; font-size: 14px; font-weight: bold; margin: 40px 0 20px 0;">
+            End of report
+        </div>
+
+        <div style="position: absolute; bottom: 22mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
+            <div>FM-CL-09-C Rev.8</div>
+            <div>Page 2 of {{calculations.totalPages}}</div>
+            <div>Issued Date {{formatDate certificate.dateOfIssue "DD/MM/YY"}}</div>
+        </div>
+
+        <div style="position: absolute; bottom: 18.5mm; left: 15mm; right: 15mm; text-align: left; font-size: 9px; font-weight: bold;">
+            ENTECH SI CO.,LTD.
+        </div>
+
+        <div style="position: absolute; bottom: 17mm; left: 15mm; right: 15mm; border-bottom: 1px solid #000;"></div>
+
+        <div style="position: absolute; bottom: 8mm; left: 15mm; right: 15mm; text-align: center; font-size: 10px; line-height: 1.2;">
+            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.0-2779-8855 info@entechsi.com</div>
+            <div>Tax ID :0105565020602 www.entechsi.com</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int           @id @default(autoincrement())
+  username             String        @unique
+  email                String        @unique
+  password             String
+  fullName             String
+  role                 Role          @default(user)
+  isActive             Boolean       @default(false)
+  verifyToken          String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  avatar               String?
+  signature            String?
+  certificatesApproved Certificate[] @relation("ApprovedCertificates")
+  certificatesCreated  Certificate[] @relation("CreatedCertificates")
+  equipmentCreated     Equipment[]   @relation("CreatedEquipment")
+  probesCreated        Probe[]       @relation("CreatedProbes")
+
+  @@map("users")
+}
+
+model Customer {
+  id            String        @id @default(cuid())
+  customerId    String        @unique
+  companyName   String
+  companyNameTH String?
+  address       String
+  addressTH     String?
+  contactPerson String
+  email         String
+  phone         String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  certificates  Certificate[]
+
+  @@map("customers")
+}
+
+model Certificate {
+  id                  Int                       @id @default(autoincrement())
+  certificateNo       String                    @unique
+  formatType          FormatType                @default(official)
+  status              CertificateStatus         @default(pending)
+  dateOfIssue         DateTime                  @default(now())
+  dateOfCalibration   DateTime
+  dueDate             DateTime?
+  remarks             String?
+  equipmentId         String
+  probeId             String
+  toolId              Int?
+  customerId          String
+  technicianName      String
+  technicianSignature String?
+  approverName        String                    @default("Pongpat Keiwamphon")
+  approverSignature   String?
+  calibrationPlace    String
+  procedureNo         String
+  ambientConditions   Json                      @default("{\"flowRate\": 1000, \"humidity\": 55.0, \"pressure\": 1013.4, \"gasPressure\": 1023.5, \"temperature\": 25.0, \"gasTemperature\": 30.5}")
+  hasAdjustment       Boolean                   @default(false)
+  createdById         Int
+  approvedById        Int?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  hasWatermark        Boolean                  @default(false)
+  adjustedData        AdjustedCalibrationData[]
+  calibrationData     CalibrationData[]
+  approvedBy          User?                     @relation("ApprovedCertificates", fields: [approvedById], references: [id])
+  createdBy           User                      @relation("CreatedCertificates", fields: [createdById], references: [id])
+  customer            Customer                  @relation(fields: [customerId], references: [id])
+  equipment           Equipment                 @relation(fields: [equipmentId], references: [id])
+  probe               Probe                     @relation(fields: [probeId], references: [id])
+  tool                ToolsManagement?          @relation(fields: [toolId], references: [id])
+
+  @@index([certificateNo])
+  @@index([status])
+  @@index([createdById])
+  @@index([customerId])
+  @@index([dateOfCalibration])
+  @@map("certificates")
+}
+
+model CalibrationData {
+  id                  Int         @id @default(autoincrement())
+  certificateId       Int
+  gasType             String
+  gasUnit             String      @default("ppm")
+  standardValue       Float
+  measurement1        Float
+  measurement2        Float
+  measurement3        Float
+  resolution          Float
+  uncertaintyStandard Float
+  meanValue           Float?
+  error               Float?
+  repeatability       Float?
+  combinedUncertainty Float?
+  expandedUncertainty Float?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  certificate         Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  @@index([certificateId])
+  @@map("calibration_data")
+}
+
+model AdjustedCalibrationData {
+  id                  Int         @id @default(autoincrement())
+  certificateId       Int
+  gasType             String
+  gasUnit             String      @default("ppm") 
+  standardValue       Float
+  measurement1        Float
+  measurement2        Float
+  measurement3        Float
+  resolution          Float
+  uncertaintyStandard Float
+  meanValue           Float?
+  error               Float?
+  repeatability       Float?
+  combinedUncertainty Float?
+  expandedUncertainty Float?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  certificate         Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  @@index([certificateId])
+  @@map("adjusted_calibration_data")
+}
+
+model ToolsManagement {
+  id                  Int           @id @default(autoincrement())
+  certificateNumber   String        @unique
+  gasName             String
+  gasUnit             String        @default("ppm")
+  vendorName          String
+  concentration       Float         @default(0)
+  uncertaintyPercent  Float         @default(0)
+  uncertaintyStandard Float?
+  dueDate             DateTime
+  certFile            String?
+  toolImage           String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  certificates        Certificate[]
+
+  @@index([certificateNumber])
+  @@index([dueDate])
+  @@map("tools_management")
+}
+
+model GasCylinderManagement {
+  id                 Int      @id @default(autoincrement())
+  itemNumber         String   @unique
+  chemicalFormula    String
+  gasName            String 
+  balanceGas         String
+  orderConcentration Float
+  realConcentration  Float
+  materialCode       String
+  certificateNumber  String
+  supplierName       String
+  storageLocation    String
+  expiredDate        DateTime
+  receivedDate       DateTime
+  fullPsi            Float
+  currentPsi         Float
+  lv1ThresholdPsi    Float
+  lv2ThresholdPsi    Float
+  pricePerPsi        Float
+  remark             String?
+  toolImageUrl       String?
+  certificateFileUrl String
+  isExpired          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([itemNumber])
+  @@index([expiredDate])
+  @@index([isExpired])
+  @@map("gas_cylinder_management")
+}
+
+model Equipment {
+  id                    String                @id @default(cuid())
+  instrumentDescription InstrumentDescription
+  instrumentModel       String
+  instrumentSerialNo    String                @unique
+  idNoOrControlNo       String?
+  manufacturer          String
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdById           Int
+  certificates          Certificate[]
+  createdBy             User                  @relation("CreatedEquipment", fields: [createdById], references: [id])
+
+  @@index([instrumentSerialNo])
+  @@index([createdById])
+  @@map("equipment")
+}
+
+model Probe {
+  id               String        @id @default(cuid())
+  probeDescription String
+  probeModel       String
+  probeSN          String        @unique
+  idNoOrControlNo  String?      
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  createdById      Int
+  certificates     Certificate[]
+  createdBy        User          @relation("CreatedProbes", fields: [createdById], references: [id])
+
+  @@index([probeSN])
+  @@index([createdById])
+  @@map("probes")
+}
+
+model Device {
+     id              Int      @id @default(autoincrement())
+     name            String
+     model           String
+     serialNumber    String   @unique
+     manufacturer    String
+     calibrationDate DateTime
+     dueDate         DateTime
+     certificateUrl  String?
+     createdAt       DateTime @default(now())
+     updatedAt       DateTime @updatedAt
+
+     @@index([serialNumber])
+     @@index([dueDate])
+     @@map("devices")
+   }
+
+
+enum Role {
+  admin
+  technician
+  user
+}
+
+enum FormatType {
+  draft
+  official
+}
+
+enum CertificateStatus {
+  pending
+  approved
+}
+
+enum InstrumentDescription {
+  GAS_DETECTOR @map("Gas Detector")
+  GAS_ANALYZER @map("Gas Analyzer")
+}
