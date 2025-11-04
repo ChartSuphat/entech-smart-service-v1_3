@@ -137,13 +137,16 @@ export class CertificateTemplateService {
       let technicianSignature: string | undefined;
       let approverSignature: string | undefined;
 
+      // Use production domain from env, fallback to localhost for development
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:4040';
+
     if (certificate.createdBy?.signature) {
-  technicianSignature = `http://localhost:4040/uploads/signatures/${certificate.createdBy.signature}`;
-  // Will be: /uploads/signatures/sig-2-1759410993282.png
+  technicianSignature = `${baseUrl}/uploads/signatures/${certificate.createdBy.signature}`;
+  // Will be: https://entech-online.com/uploads/signatures/sig-2-1759410993282.png
 }
 
 if (certificate.approvedBy?.signature) {
-  approverSignature = `http://localhost:4040/uploads/signatures/${certificate.approvedBy.signature}`;
+  approverSignature = `${baseUrl}/uploads/signatures/${certificate.approvedBy.signature}`;
 }
 
       const isDraft = this.isDraftCertificate(certificate);
