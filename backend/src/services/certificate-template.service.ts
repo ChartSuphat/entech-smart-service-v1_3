@@ -357,14 +357,28 @@ if (certificate.approvedBy?.signature) {
    * Get calculation results and metadata
    */
   private getCalculationResults(certificate: any): CalculationResults {
-    const firstCalibrationData = certificate.calibrationData?.[0];
-    const gasType = firstCalibrationData?.gasType || certificate.tool?.gasName || 'Ammonia (NH3)';
-    const concentration = firstCalibrationData?.standardValue || certificate.tool?.concentration || 50.2;
-    
+    // Build parameter string from all calibration data to show all gases with their units
+    let parameterOfCalibration = 'Gas Calibration';
+
+    if (certificate.calibrationData && certificate.calibrationData.length > 0) {
+      const gasParams = certificate.calibrationData.map((data: any) => {
+        const gasType = data.gasType;
+        const value = data.standardValue;
+        const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
+        return `${gasType} ${value} ${unit}`;
+      });
+      parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
+    } else if (certificate.tool) {
+      const gasType = certificate.tool.gasName || 'Unknown';
+      const concentration = certificate.tool.concentration || 0;
+      const unit = certificate.tool.gasUnit || 'ppm';
+      parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
+    }
+
     return {
       totalPages: 2,
       receivingNo: certificate.customer?.customerId || certificate.id.toString(),
-      parameterOfCalibration: `Gas Calibration ${gasType} ${concentration} ppm`,
+      parameterOfCalibration: parameterOfCalibration,
       conditionOfUUC: 'Used',
       remarks: [
         '1μmol/mol = 1 ppm',
