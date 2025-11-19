@@ -231,7 +231,7 @@ if (certificate.approvedBy?.signature) {
 
       return {
         ...data,
-        gasUnit: gasUnit, // Add gasUnit to each calibration data row
+        gasUnit: data.gasUnit || gasUnit, // Use row's gasUnit if exists, otherwise use fallback
         meanValue: Number(meanValue.toFixed(1)),
         error: Number(error.toFixed(1)),
         repeatability: Number(repeatability.toFixed(1)),
@@ -365,14 +365,22 @@ if (certificate.approvedBy?.signature) {
 
     if (certificate.calibrationData && certificate.calibrationData.length > 0) {
       const gasParams = certificate.calibrationData.map((data: any) => {
+        const originalGasType = data.gasType || '';
+
+        // Extract unit from gasType if it contains one (e.g., "Hydrogen (H2) 49.3 %LEL")
+        let extractedUnit = '';
+        const unitMatch = originalGasType.match(/(%LEL|ppm|%vol)/i);
+        if (unitMatch) {
+          extractedUnit = unitMatch[0];
+        }
+
         // Extract clean gas name (remove any value/unit if present in gasType)
-        let gasName = data.gasType || '';
-        // Remove patterns like "49.3 %LEL" or "50.2 ppm" from gasType if present
-        gasName = gasName.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
+        let gasName = originalGasType.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
 
         // Build the full string from clean parts
         const value = data.standardValue;
-        const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
+        // Priority: data.gasUnit > extracted from gasType > tool.gasUnit > default 'ppm'
+        const unit = data.gasUnit || extractedUnit || certificate.tool?.gasUnit || 'ppm';
         return `${gasName} ${value} ${unit}`;
       });
       parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
