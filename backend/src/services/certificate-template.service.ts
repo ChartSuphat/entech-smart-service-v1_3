@@ -534,6 +534,23 @@ private registerHandlebarsHelpers(): void {
       return a - b;
     });
 
+    // Format gas parameter with value and unit for table display
+    handlebars.registerHelper('gasWithValueUnit', (data: any) => {
+      if (!data) return '';
+
+      const gasType = data.gasType || '';
+      const standardValue = data.standardValue || '';
+      const gasUnit = data.gasUnit || '';
+
+      // If gasType already includes value and unit (legacy format), use as-is
+      if (gasType && (gasType.includes('%LEL') || gasType.includes('ppm') || gasType.includes('%vol'))) {
+        return gasType;
+      }
+
+      // Otherwise build: "Hydrogen (H2) 49.3 %LEL"
+      return `${gasType} ${standardValue} ${gasUnit}`.trim();
+    });
+
     // Conditional block helper
     handlebars.registerHelper('ifCond', function(this: any, v1: any, operator: string, v2: any, options: any) {
       switch (operator) {

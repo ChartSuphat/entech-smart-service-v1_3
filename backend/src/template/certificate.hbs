@@ -581,7 +581,7 @@
                 <tbody>
                     {{#each certificate.calibrationData}}
                         <tr>
-                            <td class="text-left">{{gasType}} {{standardValue}} {{gasUnit}}</td>
+                            <td class="text-left">{{gasWithValueUnit this}}</td>
                             <td>{{formatNumber standardValue 1}}</td>
                             <td>{{formatNumber meanValue 1}}</td>
                             <td>{{formatNumber error 1}}</td>
@@ -612,7 +612,7 @@
                 <tbody>
                     {{#each certificate.adjustedData}}
                         <tr>
-                            <td class="text-left">{{gasType}} {{standardValue}} {{gasUnit}}</td>
+                            <td class="text-left">{{gasWithValueUnit this}}</td>
                             <td>{{formatNumber standardValue 1}}</td>
                             <td>{{formatNumber meanValue 1}}</td>
                             <td>{{formatNumber error 1}}</td>
