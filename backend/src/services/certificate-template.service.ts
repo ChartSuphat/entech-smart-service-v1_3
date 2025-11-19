@@ -151,31 +151,34 @@ if (certificate.approvedBy?.signature) {
       // ✅ ADD THIS LINE: Get logo as base64
       const logoBase64 = await this.getLogoAsBase64();
 
+      // Create certificate with processed data
+      const certificateWithProcessedData = {
+        ...certificate,
+        calibrationData: processedCalibrationData,
+        adjustedData: processedAdjustedData,
+        createdBy: certificate.createdBy ? {
+          ...certificate.createdBy,
+          signature: technicianSignature
+        } : undefined,
+        approvedBy: certificate.approvedBy ? {
+          ...certificate.approvedBy,
+          signature: approverSignature
+        } : undefined
+      };
+
       const templateData: CertificateTemplateData = {
-        certificate: {
-          ...certificate,
-          calibrationData: processedCalibrationData,
-          adjustedData: processedAdjustedData,
-          createdBy: certificate.createdBy ? {
-            ...certificate.createdBy,
-            signature: technicianSignature
-          } : undefined,
-          approvedBy: certificate.approvedBy ? {
-            ...certificate.approvedBy,
-            signature: approverSignature
-          } : undefined
-        } as CertificateWithAllRelations,
-        
+        certificate: certificateWithProcessedData as CertificateWithAllRelations,
+
         // ✅ UPDATE THIS LINE: Use base64 logo
         company: {
           ...this.getCompanyInfo(),
           logo: logoBase64  // Changed from '/Logo.png' to base64
         },
-        
+
         standardReference: await this.getStandardReference(certificate.calibrationData, certificate.tool),
         ambientConditions: this.processAmbientConditions(certificate.ambientConditions),
         signatures: this.getSignatureData(certificate, technicianSignature, approverSignature),
-        calculations: this.getCalculationResults(certificate),
+        calculations: this.getCalculationResults(certificateWithProcessedData),
         isDraft: isDraft,
         formatType: certificate.formatType || 'official'
       };
