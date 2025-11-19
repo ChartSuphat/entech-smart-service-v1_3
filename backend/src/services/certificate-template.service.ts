@@ -366,6 +366,14 @@ if (certificate.approvedBy?.signature) {
     if (certificate.calibrationData && certificate.calibrationData.length > 0) {
       const gasParams = certificate.calibrationData.map((data: any) => {
         const gasType = data.gasType;
+
+        // Check if gasType already includes value and unit (legacy format)
+        // e.g., "Hydrogen (H2) 49.3 %LEL"
+        if (gasType && (gasType.includes('%LEL') || gasType.includes('ppm') || gasType.includes('%vol'))) {
+          return gasType; // Use as-is if it already has unit
+        }
+
+        // Otherwise build the string with value and unit
         const value = data.standardValue;
         const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
         return `${gasType} ${value} ${unit}`;
