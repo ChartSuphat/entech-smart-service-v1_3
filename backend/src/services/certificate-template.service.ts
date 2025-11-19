@@ -365,18 +365,15 @@ if (certificate.approvedBy?.signature) {
 
     if (certificate.calibrationData && certificate.calibrationData.length > 0) {
       const gasParams = certificate.calibrationData.map((data: any) => {
-        const gasType = data.gasType;
+        // Extract clean gas name (remove any value/unit if present in gasType)
+        let gasName = data.gasType || '';
+        // Remove patterns like "49.3 %LEL" or "50.2 ppm" from gasType if present
+        gasName = gasName.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
 
-        // Check if gasType already includes value and unit (legacy format)
-        // e.g., "Hydrogen (H2) 49.3 %LEL"
-        if (gasType && (gasType.includes('%LEL') || gasType.includes('ppm') || gasType.includes('%vol'))) {
-          return gasType; // Use as-is if it already has unit
-        }
-
-        // Otherwise build the string with value and unit
+        // Build the full string from clean parts
         const value = data.standardValue;
         const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
-        return `${gasType} ${value} ${unit}`;
+        return `${gasName} ${value} ${unit}`;
       });
       parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
     } else if (certificate.tool) {
@@ -538,17 +535,16 @@ private registerHandlebarsHelpers(): void {
     handlebars.registerHelper('gasWithValueUnit', (data: any) => {
       if (!data) return '';
 
-      const gasType = data.gasType || '';
+      // Extract clean gas name (remove any value/unit if corrupted in gasType)
+      let gasName = data.gasType || '';
+      // Remove patterns like "49.3 %LEL" or "50.2 ppm" from gasType if present
+      gasName = gasName.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
+
       const standardValue = data.standardValue || '';
       const gasUnit = data.gasUnit || '';
 
-      // If gasType already includes value and unit (legacy format), use as-is
-      if (gasType && (gasType.includes('%LEL') || gasType.includes('ppm') || gasType.includes('%vol'))) {
-        return gasType;
-      }
-
-      // Otherwise build: "Hydrogen (H2) 49.3 %LEL"
-      return `${gasType} ${standardValue} ${gasUnit}`.trim();
+      // Build: "Hydrogen (H2) 49.3 %LEL"
+      return `${gasName} ${standardValue} ${gasUnit}`.trim();
     });
 
     // Conditional block helper
