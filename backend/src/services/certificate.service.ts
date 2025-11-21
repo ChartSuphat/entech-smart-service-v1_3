@@ -148,7 +148,7 @@ export class CertificateService {
   // Get tool data to extract gasUnit
   let toolGasUnit = 'ppm'; // Default fallback
   if (data.toolId) {
-    const tool = await this.prisma.tool.findUnique({
+    const tool = await this.prisma.toolsManagement.findUnique({
       where: { id: data.toolId },
       select: { gasUnit: true }
     });
