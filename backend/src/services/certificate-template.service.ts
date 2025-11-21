@@ -363,8 +363,13 @@ if (certificate.approvedBy?.signature) {
     // Build parameter string from all calibration data to show all gases with their units
     let parameterOfCalibration = 'Gas Calibration';
 
+    console.log(`🔍 DEBUG getCalculationResults called`);
+    console.log(`🔍 Has calibrationData: ${!!certificate.calibrationData}, Length: ${certificate.calibrationData?.length}`);
+    console.log(`🔍 Has tool: ${!!certificate.tool}, Tool gasUnit: ${certificate.tool?.gasUnit}`);
+
     if (certificate.calibrationData && certificate.calibrationData.length > 0) {
-      const gasParams = certificate.calibrationData.map((data: any) => {
+      console.log(`🔍 Using calibrationData branch`);
+      const gasParams = certificate.calibrationData.map((data: any, index: number) => {
         const originalGasType = data.gasType || '';
 
         // Extract clean gas name (remove any value/unit if present in gasType)
@@ -374,16 +379,19 @@ if (certificate.approvedBy?.signature) {
         const value = data.standardValue;
         const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
 
-        console.log(`DEBUG Parameter of Calibration - gasName: "${gasName}", value: ${value}, unit from data.gasUnit: "${data.gasUnit}", final unit: "${unit}"`);
+        console.log(`🔍 Row ${index + 1}: gasName="${gasName}", value=${value}, data.gasUnit="${data.gasUnit}", tool.gasUnit="${certificate.tool?.gasUnit}", final unit="${unit}"`);
 
         return `${gasName} ${value} ${unit}`;
       });
       parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
+      console.log(`🔍 Final parameterOfCalibration: "${parameterOfCalibration}"`);
     } else if (certificate.tool) {
+      console.log(`🔍 Using tool branch`);
       const gasType = certificate.tool.gasName || 'Unknown';
       const concentration = certificate.tool.concentration || 0;
       const unit = certificate.tool.gasUnit || 'ppm';
       parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
+      console.log(`🔍 Final parameterOfCalibration from tool: "${parameterOfCalibration}"`);
     }
 
     return {
