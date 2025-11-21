@@ -367,20 +367,15 @@ if (certificate.approvedBy?.signature) {
       const gasParams = certificate.calibrationData.map((data: any) => {
         const originalGasType = data.gasType || '';
 
-        // Extract unit from gasType if it contains one (e.g., "Hydrogen (H2) 49.3 %LEL")
-        let extractedUnit = '';
-        const unitMatch = originalGasType.match(/(%LEL|ppm|%vol)/i);
-        if (unitMatch) {
-          extractedUnit = unitMatch[0];
-        }
-
         // Extract clean gas name (remove any value/unit if present in gasType)
         let gasName = originalGasType.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
 
         // Build the full string from clean parts
         const value = data.standardValue;
-        // Priority: data.gasUnit > extracted from gasType > tool.gasUnit > default 'ppm'
-        const unit = data.gasUnit || extractedUnit || certificate.tool?.gasUnit || 'ppm';
+        const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
+
+        console.log(`DEBUG Parameter of Calibration - gasName: "${gasName}", value: ${value}, unit from data.gasUnit: "${data.gasUnit}", final unit: "${unit}"`);
+
         return `${gasName} ${value} ${unit}`;
       });
       parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
