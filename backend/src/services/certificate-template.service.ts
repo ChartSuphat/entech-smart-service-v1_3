@@ -127,6 +127,16 @@ export class CertificateTemplateService {
         throw new Error('Certificate not found');
       }
 
+      // 🔍 DEBUG: Log raw data from database
+      console.log('🔍 RAW DATABASE DATA:');
+      console.log(`Certificate: ${certificate.certificateNo}`);
+      console.log(`Tool gasUnit: ${certificate.tool?.gasUnit}`);
+      if (certificate.calibrationData && certificate.calibrationData.length > 0) {
+        certificate.calibrationData.forEach((data: any, i: number) => {
+          console.log(`Row ${i + 1} from DB: gasType="${data.gasType}", standardValue=${data.standardValue}, gasUnit="${data.gasUnit}"`);
+        });
+      }
+
       // Process calibration data with gasUnit from tool
       const gasUnit = certificate.tool?.gasUnit || 'ppm';
       const processedCalibrationData = this.processCalibrationData(certificate.calibrationData, gasUnit);
