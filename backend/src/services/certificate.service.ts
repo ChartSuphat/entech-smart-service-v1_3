@@ -144,10 +144,24 @@ export class CertificateService {
     ...DEFAULT_AMBIENT_CONDITIONS,
     ...(data.ambientConditions || {})
   };
-  
-  // Prepare calibration data for creation
+
+  // Get tool data to extract gasUnit
+  let toolGasUnit = 'ppm'; // Default fallback
+  if (data.toolId) {
+    const tool = await this.prisma.tool.findUnique({
+      where: { id: data.toolId },
+      select: { gasUnit: true }
+    });
+    if (tool?.gasUnit) {
+      toolGasUnit = tool.gasUnit;
+      console.log(`✅ Using gasUnit from tool: ${toolGasUnit}`);
+    }
+  }
+
+  // Prepare calibration data for creation - include gasUnit from tool
   const calibrationDataCreate = data.calibrationData?.map(cal => ({
     gasType: cal.gasType,
+    gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
     standardValue: cal.standardValue,
     measurement1: cal.measurement1,
     measurement2: cal.measurement2,
@@ -162,9 +176,10 @@ export class CertificateService {
   }));
 
   // Prepare adjusted data for creation (if hasAdjustment)
-  const adjustedDataCreate = (data.hasAdjustment && data.adjustedData) 
+  const adjustedDataCreate = (data.hasAdjustment && data.adjustedData)
     ? data.adjustedData.map(adj => ({
         gasType: adj.gasType,
+        gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
         standardValue: adj.standardValue,
         measurement1: adj.measurement1,
         measurement2: adj.measurement2,
@@ -315,10 +330,38 @@ export class CertificateService {
 
       // Create new calibration data
       if (data.calibrationData.length > 0) {
+        // Get tool gasUnit if toolId is provided in update
+        let toolGasUnit = 'ppm';
+        if (data.toolId) {
+          const tool = await tx.tool.findUnique({
+            where: { id: data.toolId },
+            select: { gasUnit: true }
+          });
+          if (tool?.gasUnit) {
+            toolGasUnit = tool.gasUnit;
+          }
+        } else {
+          // If toolId not in update, get it from existing certificate
+          const cert = await tx.certificate.findUnique({
+            where: { id },
+            select: { toolId: true }
+          });
+          if (cert?.toolId) {
+            const tool = await tx.tool.findUnique({
+              where: { id: cert.toolId },
+              select: { gasUnit: true }
+            });
+            if (tool?.gasUnit) {
+              toolGasUnit = tool.gasUnit;
+            }
+          }
+        }
+
         await tx.calibrationData.createMany({
           data: data.calibrationData.map(cal => ({
             certificateId: id,
             gasType: cal.gasType,
+            gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
             standardValue: cal.standardValue,
             measurement1: cal.measurement1,
             measurement2: cal.measurement2,
@@ -344,10 +387,37 @@ export class CertificateService {
 
       // Create new adjusted data if exists and hasAdjustment
       if (data.hasAdjustment && data.adjustedData.length > 0) {
+        // Get tool gasUnit (same logic as calibration data)
+        let toolGasUnit = 'ppm';
+        if (data.toolId) {
+          const tool = await tx.tool.findUnique({
+            where: { id: data.toolId },
+            select: { gasUnit: true }
+          });
+          if (tool?.gasUnit) {
+            toolGasUnit = tool.gasUnit;
+          }
+        } else {
+          const cert = await tx.certificate.findUnique({
+            where: { id },
+            select: { toolId: true }
+          });
+          if (cert?.toolId) {
+            const tool = await tx.tool.findUnique({
+              where: { id: cert.toolId },
+              select: { gasUnit: true }
+            });
+            if (tool?.gasUnit) {
+              toolGasUnit = tool.gasUnit;
+            }
+          }
+        }
+
         await tx.adjustedCalibrationData.createMany({
           data: data.adjustedData.map(adj => ({
             certificateId: id,
             gasType: adj.gasType,
+            gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
             standardValue: adj.standardValue,
             measurement1: adj.measurement1,
             measurement2: adj.measurement2,
