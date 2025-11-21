@@ -360,38 +360,27 @@ if (certificate.approvedBy?.signature) {
    * Get calculation results and metadata
    */
   private getCalculationResults(certificate: any): CalculationResults {
-    // Build parameter string from all calibration data to show all gases with their units
+    // Build parameter string - use same logic as gasWithValueUnit helper
     let parameterOfCalibration = 'Gas Calibration';
 
-    console.log(`🔍 DEBUG getCalculationResults called`);
-    console.log(`🔍 Has calibrationData: ${!!certificate.calibrationData}, Length: ${certificate.calibrationData?.length}`);
-    console.log(`🔍 Has tool: ${!!certificate.tool}, Tool gasUnit: ${certificate.tool?.gasUnit}`);
-
     if (certificate.calibrationData && certificate.calibrationData.length > 0) {
-      console.log(`🔍 Using calibrationData branch`);
-      const gasParams = certificate.calibrationData.map((data: any, index: number) => {
+      const gasParams = certificate.calibrationData.map((data: any) => {
+        // Use EXACT same logic as gasWithValueUnit helper
         const originalGasType = data.gasType || '';
+        // Extract clean gas name
+        const gasName = originalGasType.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
+        const standardValue = data.standardValue || '';
+        const gasUnit = data.gasUnit || '';
 
-        // Extract clean gas name (remove any value/unit if present in gasType)
-        let gasName = originalGasType.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
-
-        // Build the full string from clean parts
-        const value = data.standardValue;
-        const unit = data.gasUnit || certificate.tool?.gasUnit || 'ppm';
-
-        console.log(`🔍 Row ${index + 1}: gasName="${gasName}", value=${value}, data.gasUnit="${data.gasUnit}", tool.gasUnit="${certificate.tool?.gasUnit}", final unit="${unit}"`);
-
-        return `${gasName} ${value} ${unit}`;
+        // Build: "Hydrogen (H2) 49.3 %LEL"
+        return `${gasName} ${standardValue} ${gasUnit}`.trim();
       });
       parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
-      console.log(`🔍 Final parameterOfCalibration: "${parameterOfCalibration}"`);
     } else if (certificate.tool) {
-      console.log(`🔍 Using tool branch`);
       const gasType = certificate.tool.gasName || 'Unknown';
       const concentration = certificate.tool.concentration || 0;
       const unit = certificate.tool.gasUnit || 'ppm';
       parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
-      console.log(`🔍 Final parameterOfCalibration from tool: "${parameterOfCalibration}"`);
     }
 
     return {
