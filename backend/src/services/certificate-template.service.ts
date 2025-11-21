@@ -127,16 +127,6 @@ export class CertificateTemplateService {
         throw new Error('Certificate not found');
       }
 
-      // 🔍 DEBUG: Log raw data from database
-      console.log('🔍 RAW DATABASE DATA:');
-      console.log(`Certificate: ${certificate.certificateNo}`);
-      console.log(`Tool gasUnit: ${certificate.tool?.gasUnit}`);
-      if (certificate.calibrationData && certificate.calibrationData.length > 0) {
-        certificate.calibrationData.forEach((data: any, i: number) => {
-          console.log(`Row ${i + 1} from DB: gasType="${data.gasType}", standardValue=${data.standardValue}, gasUnit="${data.gasUnit}"`);
-        });
-      }
-
       // Process calibration data with gasUnit from tool
       const gasUnit = certificate.tool?.gasUnit || 'ppm';
       const processedCalibrationData = this.processCalibrationData(certificate.calibrationData, gasUnit);
@@ -370,36 +360,15 @@ if (certificate.approvedBy?.signature) {
    * Get calculation results and metadata
    */
   private getCalculationResults(certificate: any): CalculationResults {
-    // Build parameter string - use same logic as gasWithValueUnit helper
+    // Build parameter string using tool data directly (not calibrationData rows)
     let parameterOfCalibration = 'Gas Calibration';
 
-    console.log('🔍🔍🔍 getCalculationResults called');
-    console.log('Has calibrationData:', !!certificate.calibrationData, 'Length:', certificate.calibrationData?.length);
-
-    if (certificate.calibrationData && certificate.calibrationData.length > 0) {
-      const gasParams = certificate.calibrationData.map((data: any, idx: number) => {
-        // Use EXACT same logic as gasWithValueUnit helper
-        const originalGasType = data.gasType || '';
-        // Extract clean gas name
-        const gasName = originalGasType.replace(/\s+\d+\.?\d*\s*(%LEL|ppm|%vol|%|LEL).*$/i, '').trim();
-        const standardValue = data.standardValue || '';
-        const gasUnit = data.gasUnit || '';
-
-        console.log(`🔍 Row ${idx+1} in getCalculationResults: gasName="${gasName}", standardValue="${standardValue}", gasUnit="${gasUnit}"`);
-
-        // Build: "Hydrogen (H2) 49.3 %LEL"
-        const result = `${gasName} ${standardValue} ${gasUnit}`.trim();
-        console.log(`🔍 Row ${idx+1} result: "${result}"`);
-        return result;
-      });
-      parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
-      console.log(`🔍🔍🔍 FINAL parameterOfCalibration: "${parameterOfCalibration}"`);
-    } else if (certificate.tool) {
+    // Always use tool data for Parameter of Calibration
+    if (certificate.tool) {
       const gasType = certificate.tool.gasName || 'Unknown';
       const concentration = certificate.tool.concentration || 0;
       const unit = certificate.tool.gasUnit || 'ppm';
       parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
-      console.log(`🔍🔍🔍 FINAL parameterOfCalibration from tool: "${parameterOfCalibration}"`);
     }
 
     return {
