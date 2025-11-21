@@ -363,12 +363,21 @@ if (certificate.approvedBy?.signature) {
     // Build parameter string using tool data directly (not calibrationData rows)
     let parameterOfCalibration = 'Gas Calibration';
 
+    console.log('🔥 getCalculationResults - Has tool?', !!certificate.tool);
+    if (certificate.tool) {
+      console.log('🔥 Tool data:', JSON.stringify(certificate.tool));
+    }
+
     // Always use tool data for Parameter of Calibration
     if (certificate.tool) {
       const gasType = certificate.tool.gasName || 'Unknown';
       const concentration = certificate.tool.concentration || 0;
       const unit = certificate.tool.gasUnit || 'ppm';
+      console.log(`🔥 Building: gasType="${gasType}", concentration=${concentration}, unit="${unit}"`);
       parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
+      console.log(`🔥 FINAL: "${parameterOfCalibration}"`);
+    } else {
+      console.log('🔥 NO TOOL FOUND - using default');
     }
 
     return {
