@@ -373,8 +373,11 @@ if (certificate.approvedBy?.signature) {
     // Build parameter string - use same logic as gasWithValueUnit helper
     let parameterOfCalibration = 'Gas Calibration';
 
+    console.log('🔍🔍🔍 getCalculationResults called');
+    console.log('Has calibrationData:', !!certificate.calibrationData, 'Length:', certificate.calibrationData?.length);
+
     if (certificate.calibrationData && certificate.calibrationData.length > 0) {
-      const gasParams = certificate.calibrationData.map((data: any) => {
+      const gasParams = certificate.calibrationData.map((data: any, idx: number) => {
         // Use EXACT same logic as gasWithValueUnit helper
         const originalGasType = data.gasType || '';
         // Extract clean gas name
@@ -382,15 +385,21 @@ if (certificate.approvedBy?.signature) {
         const standardValue = data.standardValue || '';
         const gasUnit = data.gasUnit || '';
 
+        console.log(`🔍 Row ${idx+1} in getCalculationResults: gasName="${gasName}", standardValue="${standardValue}", gasUnit="${gasUnit}"`);
+
         // Build: "Hydrogen (H2) 49.3 %LEL"
-        return `${gasName} ${standardValue} ${gasUnit}`.trim();
+        const result = `${gasName} ${standardValue} ${gasUnit}`.trim();
+        console.log(`🔍 Row ${idx+1} result: "${result}"`);
+        return result;
       });
       parameterOfCalibration = `Gas Calibration ${gasParams.join(', ')}`;
+      console.log(`🔍🔍🔍 FINAL parameterOfCalibration: "${parameterOfCalibration}"`);
     } else if (certificate.tool) {
       const gasType = certificate.tool.gasName || 'Unknown';
       const concentration = certificate.tool.concentration || 0;
       const unit = certificate.tool.gasUnit || 'ppm';
       parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
+      console.log(`🔍🔍🔍 FINAL parameterOfCalibration from tool: "${parameterOfCalibration}"`);
     }
 
     return {
