@@ -333,7 +333,7 @@ export class CertificateService {
         // Get tool gasUnit if toolId is provided in update
         let toolGasUnit = 'ppm';
         if (data.toolId) {
-          const tool = await tx.tool.findUnique({
+          const tool = await tx.toolsManagement.findUnique({
             where: { id: data.toolId },
             select: { gasUnit: true }
           });
@@ -347,7 +347,7 @@ export class CertificateService {
             select: { toolId: true }
           });
           if (cert?.toolId) {
-            const tool = await tx.tool.findUnique({
+            const tool = await tx.toolsManagement.findUnique({
               where: { id: cert.toolId },
               select: { gasUnit: true }
             });
@@ -390,7 +390,7 @@ export class CertificateService {
         // Get tool gasUnit (same logic as calibration data)
         let toolGasUnit = 'ppm';
         if (data.toolId) {
-          const tool = await tx.tool.findUnique({
+          const tool = await tx.toolsManagement.findUnique({
             where: { id: data.toolId },
             select: { gasUnit: true }
           });
@@ -403,7 +403,7 @@ export class CertificateService {
             select: { toolId: true }
           });
           if (cert?.toolId) {
-            const tool = await tx.tool.findUnique({
+            const tool = await tx.toolsManagement.findUnique({
               where: { id: cert.toolId },
               select: { gasUnit: true }
             });
