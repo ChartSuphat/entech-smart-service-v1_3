@@ -1465,6 +1465,9 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       }
       console.log('🔍 Frontend formData.toolId:', formData.toolId);
       console.log('🔍 Frontend toolId type:', typeof formData.toolId);
+      console.log('🔍 Frontend formData.receivingNo:', formData.receivingNo);
+      console.log('🔍 Frontend receivingNo type:', typeof formData.receivingNo);
+      console.log('🔍 Frontend receivingNo length:', formData.receivingNo?.length);
       // Prepare final certificate data for API
       const certificateData = {
         certificateNo: formData.certificateNo || undefined,
