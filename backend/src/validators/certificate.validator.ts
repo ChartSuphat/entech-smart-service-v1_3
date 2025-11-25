@@ -26,6 +26,7 @@ const CalibrationDataSchema = z.object({
 
 export const CreateCertificateSchema = z.object({
   certificateNo: z.string().optional(),
+  receivingNo: z.string().optional(),
   formatType: z.enum(['draft', 'official']).default('official'),
   equipmentId: z.string().min(1, "Equipment ID is required"),
   probeId: z.string().min(1, "Probe ID is required"),
