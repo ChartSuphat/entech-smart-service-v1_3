@@ -380,9 +380,17 @@ if (certificate.approvedBy?.signature) {
       console.log('🔥 NO TOOL FOUND - using default');
     }
 
+    const receivingNo = certificate.receivingNo || certificate.customer?.customerId || certificate.id.toString();
+    console.log('📋 Receiving No calculation:', {
+      certificateReceivingNo: certificate.receivingNo,
+      customerCustomerId: certificate.customer?.customerId,
+      certificateId: certificate.id,
+      finalReceivingNo: receivingNo
+    });
+
     return {
       totalPages: 2,
-      receivingNo: certificate.receivingNo || certificate.customer?.customerId || certificate.id.toString(),
+      receivingNo: receivingNo,
       parameterOfCalibration: parameterOfCalibration,
       conditionOfUUC: 'Used',
       remarks: [
