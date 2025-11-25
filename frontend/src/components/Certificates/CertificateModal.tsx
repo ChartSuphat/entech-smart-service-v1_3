@@ -27,6 +27,7 @@ import api from '../../utils/axios';
 interface Certificate {
   id: number;
   certificateNo: string;
+  receivingNo?: string;
   status: 'pending' | 'approved';
   dateOfCalibration: string;
   dateOfIssue: string;
@@ -1467,6 +1468,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       // Prepare final certificate data for API
       const certificateData = {
         certificateNo: formData.certificateNo || undefined,
+        receivingNo: formData.receivingNo || undefined, // ✅ ADD receivingNo field
         formatType: formData.formatType, // This will be 'official' by default, 'draft' if watermark selected
         status: 'pending',
         customerId: formData.customerId,
@@ -2660,6 +2662,22 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
               onChange={handleInputChange}
               disabled={mode === 'view'}
               placeholder="Auto-generated if empty"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Receiving No.
+              <span className="text-xs text-gray-500 ml-1">(Optional - defaults to Customer ID)</span>
+            </label>
+            <input
+              type="text"
+              name="receivingNo"
+              value={formData.receivingNo}
+              onChange={handleInputChange}
+              disabled={mode === 'view'}
+              placeholder="Leave empty to use Customer ID"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             />
           </div>
