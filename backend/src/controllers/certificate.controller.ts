@@ -468,7 +468,10 @@ getUserSignature = async (req: AuthRequest, res: Response): Promise<void> => {
       }
 
       const validatedData = UpdateCertificateSchema.parse(req.body);
+      console.log('🔍 UPDATE - Validated receivingNo:', validatedData.receivingNo);
+      console.log('🔍 UPDATE - Raw body receivingNo:', req.body.receivingNo);
       const certificate = await this.certificateService.updateCertificate(certificateId, validatedData);
+      console.log('🔍 UPDATE - Returned receivingNo:', certificate.receivingNo);
 
       res.json({
         success: true,
