@@ -382,7 +382,7 @@ if (certificate.approvedBy?.signature) {
 
     return {
       totalPages: 2,
-      receivingNo: certificate.customer?.customerId || certificate.id.toString(),
+      receivingNo: certificate.receivingNo || certificate.customer?.customerId || certificate.id.toString(),
       parameterOfCalibration: parameterOfCalibration,
       conditionOfUUC: 'Used',
       remarks: [

@@ -48,6 +48,7 @@ model Customer {
 model Certificate {
   id                  Int                       @id @default(autoincrement())
   certificateNo       String                    @unique
+  receivingNo         String?
   formatType          FormatType                @default(official)
   status              CertificateStatus         @default(pending)
   dateOfIssue         DateTime                  @default(now())

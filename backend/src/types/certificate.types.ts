@@ -70,9 +70,10 @@ export interface UserSelection {
 
 export interface CreateCertificateData {
   certificateNo?: string;
+  receivingNo?: string;
   formatType?: 'draft' | 'official';
-  hasWatermark?: boolean; 
-  dateOfIssue?: Date;  
+  hasWatermark?: boolean;
+  dateOfIssue?: Date;
   equipmentId: string;
   probeId: string;
   customerId: string;
@@ -91,9 +92,10 @@ export interface CreateCertificateData {
 
 export interface UpdateCertificateData {
   certificateNo?: string;
+  receivingNo?: string;
   formatType?: 'draft' | 'official';
-  hasWatermark?: boolean; 
-  dateOfIssue?: Date; 
+  hasWatermark?: boolean;
+  dateOfIssue?: Date;
   equipmentId?: string;
   probeId?: string;
   customerId?: string;
@@ -116,6 +118,7 @@ export interface UpdateCertificateData {
 export interface CertificateResponse {
   id: number;
   certificateNo: string;
+  receivingNo?: string | null;
   formatType: FormatType;
   status: CertificateStatus;
   dateOfIssue: Date;

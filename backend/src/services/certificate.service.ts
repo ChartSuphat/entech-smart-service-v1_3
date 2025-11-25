@@ -209,6 +209,7 @@ export class CertificateService {
   const certificate = await this.prisma.certificate.create({
     data: {
       certificateNo,
+      receivingNo: data.receivingNo || undefined, // ✅ ADD receivingNo field
       formatType: data.formatType || 'official', // ✅ CHANGED DEFAULT
       hasWatermark: data.hasWatermark || false, // ✅ ADD NEW FIELD
       dateOfIssue: data.dateOfIssue || new Date(), // ✅ ADD NEW FIELD
@@ -286,10 +287,11 @@ export class CertificateService {
     // Update the main certificate
     const updatePayload: Prisma.CertificateUpdateInput = {
       certificateNo: data.certificateNo,
+      receivingNo: data.receivingNo, // ✅ ADD receivingNo field
       formatType: data.formatType,
       hasWatermark: data.hasWatermark, // ✅ ADD NEW FIELD
       dateOfIssue: data.dateOfIssue, // ✅ ADD NEW FIELD
-      
+
       // Use Prisma relation syntax for foreign keys
       ...(data.equipmentId && {
         equipment: { connect: { id: data.equipmentId } }
@@ -303,7 +305,7 @@ export class CertificateService {
       ...(data.toolId !== undefined && {
         tool: data.toolId ? { connect: { id: data.toolId } } : { disconnect: true }
       }),
-      
+
       technicianName: data.technicianName,
       calibrationPlace: data.calibrationPlace,
       procedureNo: data.procedureNo,
