@@ -440,13 +440,14 @@
             </table>
         </div>
 
-        {{#unless isDraft}}
         <div class="signature-section">
             <div class="signature-block">
                 <div class="signature-line">
-                    {{#if signatures.technicianSignature}}
-                        <img src="{{signatures.technicianSignature}}" alt="Technician Signature" class="signature-image">
-                    {{/if}}
+                    {{#unless isDraft}}
+                        {{#if signatures.technicianSignature}}
+                            <img src="{{signatures.technicianSignature}}" alt="Technician Signature" class="signature-image">
+                        {{/if}}
+                    {{/unless}}
                 </div>
                 <div class="signature-name">{{signatures.technicianName}}</div>
                 <div class="signature-title">{{signatures.technicianTitle}}</div>
@@ -454,15 +455,16 @@
 
             <div class="signature-block">
                 <div class="signature-line">
-                    {{#if signatures.approverSignature}}
-                        <img src="{{signatures.approverSignature}}" alt="Approver Signature" class="signature-image">
-                    {{/if}}
+                    {{#unless isDraft}}
+                        {{#if signatures.approverSignature}}
+                            <img src="{{signatures.approverSignature}}" alt="Approver Signature" class="signature-image">
+                        {{/if}}
+                    {{/unless}}
                 </div>
                 <div class="signature-name">{{signatures.approverName}}</div>
                 <div class="signature-title">{{signatures.approverTitle}}</div>
             </div>
         </div>
-        {{/unless}}
 
         <div style="position: absolute; bottom: 22mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
             <div>FM-CL-09-C Rev.8</div>
