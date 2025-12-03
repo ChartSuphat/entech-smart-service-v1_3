@@ -440,6 +440,7 @@
             </table>
         </div>
 
+        {{#unless isDraft}}
         <div class="signature-section">
             <div class="signature-block">
                 <div class="signature-line">
@@ -461,6 +462,7 @@
                 <div class="signature-title">{{signatures.approverTitle}}</div>
             </div>
         </div>
+        {{/unless}}
 
         <div style="position: absolute; bottom: 22mm; left: 15mm; right: 15mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
             <div>FM-CL-09-C Rev.8</div>
