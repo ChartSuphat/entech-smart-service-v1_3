@@ -120,7 +120,8 @@ export const login = async (req: Request, res: Response) => {
       role: user.role,
       email: user.email,
       avatar: user.avatar,
-      signature: user.signature  
+      signature: user.signature,
+      companyCode: user.companyCode
     }
     // ❌ REMOVED: token from response body for security
   });

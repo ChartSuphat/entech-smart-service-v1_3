@@ -20,6 +20,7 @@ model User {
   updatedAt            DateTime      @updatedAt
   avatar               String?
   signature            String?
+  companyCode          String?
   certificatesApproved Certificate[] @relation("ApprovedCertificates")
   certificatesCreated  Certificate[] @relation("CreatedCertificates")
   equipmentCreated     Equipment[]   @relation("CreatedEquipment")

@@ -393,6 +393,62 @@ export const changePassword = async (req: any, res: Response) => {
   }
 };
 
+// Admin reset password (no old password required)
+export const adminResetPassword = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    // Check user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, email: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    console.log(`Admin reset password for user: ${user.fullName} (${user.email})`);
+
+    res.json({
+      success: true,
+      message: `Password reset successfully for ${user.fullName}`
+    });
+  } catch (error: any) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password',
+      error: error.message
+    });
+  }
+};
+
 // Get all users (admin only)
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -403,6 +459,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         email: true,
         fullName: true,
         role: true,
+        companyCode: true,
         isActive: true,
         createdAt: true,
         updatedAt: true
@@ -625,6 +682,70 @@ export const manualVerifyUser = async (req: Request, res: Response) => {
     });
   }
 };
+// Assign company code to user (admin only)
+export const assignCompanyCode = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { companyCode } = req.body;
+
+    if (companyCode !== null && companyCode !== undefined) {
+      // Validate companyCode format (4-5 chars)
+      if (typeof companyCode !== 'string' || companyCode.length < 4 || companyCode.length > 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'Company code must be 4-5 characters'
+        });
+      }
+
+      // Validate companyCode exists in Customer table (or is ENTCH)
+      const ENTECH_COMPANY_CODE = 'ENTCH';
+      if (companyCode !== ENTECH_COMPANY_CODE) {
+        const customer = await prisma.customer.findUnique({
+          where: { customerId: companyCode }
+        });
+        if (!customer) {
+          return res.status(400).json({
+            success: false,
+            message: `Company code "${companyCode}" not found in customers`
+          });
+        }
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { companyCode: companyCode || null },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        companyCode: true,
+        isActive: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: companyCode
+        ? `Company code "${companyCode}" assigned to user`
+        : 'Company code removed from user',
+      data: updatedUser
+    });
+  } catch (error: any) {
+    console.error('Error assigning company code:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Failed to assign company code',
+      error: error.message
+    });
+  }
+};
+
 // Get user statistics (admin only)
 export const getUserStats = async (req: Request, res: Response) => {
   try {

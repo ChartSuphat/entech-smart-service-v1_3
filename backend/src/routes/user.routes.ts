@@ -8,12 +8,14 @@ import {
   deleteUserAvatar,
   deleteUserSignature,
   changePassword,
+  adminResetPassword,
   getAllUsers,
   deleteUser,
   updateUserRole,
   toggleUserStatus,
   getUserStats,
-  manualVerifyUser
+  manualVerifyUser,
+  assignCompanyCode
 } from '../controllers/user.controller';
 import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
 
@@ -66,8 +68,14 @@ router.delete('/:id/avatar', authMiddleware, requireRole('admin'), deleteUserAva
 // Delete specific user's signature (admin only)
 router.delete('/:id/signature', authMiddleware, requireRole('admin'), deleteUserSignature);
 
-// Change specific user's password (admin only)
+// Change specific user's password (admin only - requires old password)
 router.post('/:id/password', authMiddleware, requireRole('admin'), changePassword);
+
+// Reset user password (admin only - NO old password needed)
+router.post('/:id/reset-password', authMiddleware, requireRole('admin'), adminResetPassword);
+
+// Assign company code to user (admin only)
+router.post('/:id/assign-company', authMiddleware, requireRole('admin'), assignCompanyCode);
 
 // Delete user (admin only)
 router.delete('/:id', authMiddleware, requireRole('admin'), deleteUser);

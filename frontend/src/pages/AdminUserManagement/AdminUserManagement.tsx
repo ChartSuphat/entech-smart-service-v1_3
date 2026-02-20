@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HiUserGroup, HiShieldCheck, HiUserCircle, HiSearch, HiTrash } from 'react-icons/hi';
+import { HiUserGroup, HiShieldCheck, HiUserCircle, HiSearch, HiTrash, HiOfficeBuilding, HiKey } from 'react-icons/hi';
 import api from '../../utils/axios';
 
 interface User {
@@ -8,8 +8,14 @@ interface User {
   email: string;
   fullName: string;
   role: 'admin' | 'technician' | 'user';
+  companyCode: string | null;
   isActive: boolean;
   createdAt: string;
+}
+
+interface Customer {
+  customerId: string;
+  companyName: string;
 }
 
 const AdminUserManagement: React.FC = () => {
@@ -18,10 +24,16 @@ const AdminUserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'admin' | 'technician' | 'user'>('all');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [assignModal, setAssignModal] = useState<{ open: boolean; userId: number; userName: string; currentCode: string | null }>({ open: false, userId: 0, userName: '', currentCode: null });
+  const [selectedCompanyCode, setSelectedCompanyCode] = useState<string>('');
+  const [passwordModal, setPasswordModal] = useState<{ open: boolean; userId: number; userName: string }>({ open: false, userId: 0, userName: '' });
+  const [newPassword, setNewPassword] = useState<string>('');
 
   // Load current user info (to check if admin)
   useEffect(() => {
     loadCurrentUser();
+    loadCustomers();
   }, []);
 
   // Load users
@@ -137,6 +149,61 @@ const AdminUserManagement: React.FC = () => {
     } catch (error) {
       console.error('Error deleting user:', error);
       alert('Failed to delete user');
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const response = await api.get('/customers');
+      setCustomers(response.data || []);
+    } catch (error) {
+      console.error('Error loading customers:', error);
+    }
+  };
+
+  const openAssignModal = (user: User) => {
+    setAssignModal({ open: true, userId: user.id, userName: user.fullName, currentCode: user.companyCode });
+    setSelectedCompanyCode(user.companyCode || '');
+  };
+
+  const handleAssignCompany = async () => {
+    try {
+      const response = await api.post(`/users/${assignModal.userId}/assign-company`, {
+        companyCode: selectedCompanyCode || null
+      });
+      if (response.data.success) {
+        alert(response.data.message);
+        setAssignModal({ open: false, userId: 0, userName: '', currentCode: null });
+        loadUsers();
+      }
+    } catch (error: any) {
+      console.error('Error assigning company:', error);
+      alert(error.response?.data?.message || 'Failed to assign company code');
+    }
+  };
+
+  const openPasswordModal = (user: User) => {
+    setPasswordModal({ open: true, userId: user.id, userName: user.fullName });
+    setNewPassword('');
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+    try {
+      const response = await api.post(`/users/${passwordModal.userId}/reset-password`, {
+        newPassword
+      });
+      if (response.data.success) {
+        alert(response.data.message);
+        setPasswordModal({ open: false, userId: 0, userName: '' });
+        setNewPassword('');
+      }
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      alert(error.response?.data?.message || 'Failed to reset password');
     }
   };
 
@@ -266,6 +333,7 @@ const AdminUserManagement: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">User</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Current Role</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Company</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Joined</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase">Actions</th>
@@ -295,6 +363,16 @@ const AdminUserManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
+                      {user.companyCode ? (
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.companyCode === 'ENTCH' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'}`}>
+                          <HiOfficeBuilding className="w-3 h-3" />
+                          {user.companyCode}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Not assigned</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                         {user.isActive ? 'Active' : 'Inactive'}
@@ -316,6 +394,28 @@ const AdminUserManagement: React.FC = () => {
                           <option value="technician">Technician</option>
                           <option value="admin">Admin</option>
                         </select>
+
+                        {/* Assign company button */}
+                        <button
+                          onClick={() => openAssignModal(user)}
+                          disabled={user.id === currentUser.id}
+                          className="px-3 py-1 text-xs rounded-md font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Assign company"
+                        >
+                          <HiOfficeBuilding className="w-4 h-4 inline mr-1" />
+                          Company
+                        </button>
+
+                        {/* Reset password button */}
+                        <button
+                          onClick={() => openPasswordModal(user)}
+                          disabled={user.id === currentUser.id}
+                          className="px-3 py-1 text-xs rounded-md font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Reset password"
+                        >
+                          <HiKey className="w-4 h-4 inline mr-1" />
+                          Password
+                        </button>
 
                         {/* Manual verify button - only show for unverified users */}
                         {!user.isActive && (
@@ -346,6 +446,99 @@ const AdminUserManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Assign Company Modal */}
+      {assignModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Assign Company Code
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Assign a company to <strong>{assignModal.userName}</strong>
+            </p>
+
+            <select
+              value={selectedCompanyCode}
+              onChange={(e) => setSelectedCompanyCode(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
+            >
+              <option value="">-- No Company (Remove) --</option>
+              <option value="ENTCH">ENTCH - Entech (See All Certificates)</option>
+              {customers.map((c) => (
+                <option key={c.customerId} value={c.customerId}>
+                  {c.customerId} - {c.companyName}
+                </option>
+              ))}
+            </select>
+
+            <p className="text-xs text-gray-500 mb-4">
+              {selectedCompanyCode === 'ENTCH'
+                ? 'Entech staff - will see ALL certificates'
+                : selectedCompanyCode
+                  ? `Will only see certificates for company "${selectedCompanyCode}"`
+                  : 'No company - user will see no certificates'}
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setAssignModal({ open: false, userId: 0, userName: '', currentCode: null })}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignCompany}
+                className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {passwordModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <HiKey className="w-5 h-5 inline mr-2 text-blue-600" />
+              Reset Password
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Set new password for <strong>{passwordModal.userName}</strong>
+            </p>
+
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password (min 6 characters)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setPasswordModal({ open: false, userId: 0, userName: '' });
+                  setNewPassword('');
+                }}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={!newPassword || newPassword.length < 6}
+                className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Reset Password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

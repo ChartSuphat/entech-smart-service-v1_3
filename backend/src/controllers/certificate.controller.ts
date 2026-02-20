@@ -34,7 +34,8 @@ export class CertificateController {
         status,
         search,
         userId: req.user?.id,
-        userRole: req.user?.role
+        userRole: req.user?.role,
+        userCompanyCode: req.user?.companyCode
       });
 
       res.json({

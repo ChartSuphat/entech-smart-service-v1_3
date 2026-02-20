@@ -17,8 +17,11 @@ export class CertificateService {
     this.prisma = new PrismaClient();
   }
 
+  // Entech company code - users with this code see all certificates
+  private static readonly ENTECH_COMPANY_CODE = 'ENTCH';
+
   async getAllCertificates(filters: CertificateFilters) {
-    const { page, limit, status, search } = filters;
+    const { page, limit, status, search, userRole, userCompanyCode } = filters;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -30,6 +33,23 @@ export class CertificateService {
         { calibrationPlace: { contains: search, mode: 'insensitive' } }
       ];
     }
+
+    // Company-based filtering for 'user' role
+    if (userRole === 'user') {
+      if (!userCompanyCode) {
+        // No company assigned → see nothing
+        return {
+          certificates: [],
+          pagination: { total: 0, page, limit, totalPages: 0 }
+        };
+      }
+      if (userCompanyCode !== CertificateService.ENTECH_COMPANY_CODE) {
+        // External company → only their certificates
+        where.customer = { customerId: userCompanyCode };
+      }
+      // Entech staff (companyCode === 'ENTCH') → no filter, see all
+    }
+    // admin and technician → no filter, see all
 
     const [certificates, total] = await Promise.all([
       this.prisma.certificate.findMany({

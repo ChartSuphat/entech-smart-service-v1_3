@@ -187,6 +187,7 @@ export interface CertificateFilters {
   sortOrder?: string; 
   userId?: number;
   userRole?: string;
+  userCompanyCode?: string | null;
 }
 
 export interface CertificatePagination {
