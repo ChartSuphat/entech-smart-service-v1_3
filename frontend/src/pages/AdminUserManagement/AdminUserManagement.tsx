@@ -209,9 +209,13 @@ const AdminUserManagement: React.FC = () => {
 
   // Filter users
   const filteredUsers = users.filter(user => {
+    const companyName = user.companyCode === 'ENTCH'
+      ? 'entech'
+      : customers.find(c => c.customerId === user.companyCode)?.companyName?.toLowerCase() || '';
     const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase());
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      companyName.includes(searchTerm.toLowerCase());
 
     const matchesRole = filterRole === 'all' || user.role === filterRole;
 
@@ -366,7 +370,9 @@ const AdminUserManagement: React.FC = () => {
                       {user.companyCode ? (
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.companyCode === 'ENTCH' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'}`}>
                           <HiOfficeBuilding className="w-3 h-3" />
-                          {user.companyCode}
+                          {user.companyCode === 'ENTCH'
+                            ? 'Entech'
+                            : customers.find(c => c.customerId === user.companyCode)?.companyName || user.companyCode}
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400">Not assigned</span>
@@ -476,7 +482,7 @@ const AdminUserManagement: React.FC = () => {
               {selectedCompanyCode === 'ENTCH'
                 ? 'Entech staff - will see ALL certificates'
                 : selectedCompanyCode
-                  ? `Will only see certificates for company "${selectedCompanyCode}"`
+                  ? `Will only see certificates for ${customers.find(c => c.customerId === selectedCompanyCode)?.companyName || selectedCompanyCode}`
                   : 'No company - user will see no certificates'}
             </p>
 

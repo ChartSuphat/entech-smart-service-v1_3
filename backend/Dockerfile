@@ -19,7 +19,6 @@ RUN npm install
 COPY . .
 
 RUN npx prisma generate
-RUN npx prisma db push
 RUN npm run build
 
 # Create entrypoint script
@@ -29,6 +28,7 @@ RUN echo '#!/bin/sh' > /app/entrypoint.sh && \
     echo '  cp /app/src/Logo.png /app/uploads/documents/Logo.png' >> /app/entrypoint.sh && \
     echo '  echo "Logo copied successfully"' >> /app/entrypoint.sh && \
     echo 'fi' >> /app/entrypoint.sh && \
+    echo 'npx prisma migrate deploy' >> /app/entrypoint.sh && \
     echo 'exec npm start' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 

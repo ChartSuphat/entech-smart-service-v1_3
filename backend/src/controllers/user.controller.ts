@@ -689,14 +689,6 @@ export const assignCompanyCode = async (req: Request, res: Response) => {
     const { companyCode } = req.body;
 
     if (companyCode !== null && companyCode !== undefined) {
-      // Validate companyCode format (4-5 chars)
-      if (typeof companyCode !== 'string' || companyCode.length < 4 || companyCode.length > 5) {
-        return res.status(400).json({
-          success: false,
-          message: 'Company code must be 4-5 characters'
-        });
-      }
-
       // Validate companyCode exists in Customer table (or is ENTCH)
       const ENTECH_COMPANY_CODE = 'ENTCH';
       if (companyCode !== ENTECH_COMPANY_CODE) {
