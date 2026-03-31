@@ -13,6 +13,8 @@ interface User {
   signature?: string;
   avatarUrl?: string;
   signatureUrl?: string;
+  companyCode?: string | null;
+  companyName?: string | null;
 }
 
 const SettingsPage: React.FC = () => {
@@ -462,6 +464,22 @@ const SettingsPage: React.FC = () => {
               <input
                 type="text"
                 value={user?.role || ''}
+                className={`w-full px-3 py-2 border rounded-md transition-colors ${isDark
+                  ? 'bg-gray-700 border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border-gray-300 text-gray-900'
+                  }`}
+                disabled
+              />
+            </div>
+
+            {/* Company */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 transition-colors ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Company
+              </label>
+              <input
+                type="text"
+                value={user?.companyName || user?.companyCode || 'Not assigned'}
                 className={`w-full px-3 py-2 border rounded-md transition-colors ${isDark
                   ? 'bg-gray-700 border-gray-600 text-gray-300'
                   : 'bg-gray-100 border-gray-300 text-gray-900'

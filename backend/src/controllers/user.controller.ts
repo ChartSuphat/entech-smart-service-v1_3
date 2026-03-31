@@ -68,7 +68,8 @@ export const getUserProfile = async (req: any, res: Response) => {
         signature: true,
         isActive: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        companyCode: true
       }
     });
 
@@ -83,9 +84,22 @@ export const getUserProfile = async (req: any, res: Response) => {
 
     console.log("b");
 
+    // Resolve company name from companyCode
+    let companyName: string | null = null;
+    if (user.companyCode === 'ENTCH') {
+      companyName = 'Entech';
+    } else if (user.companyCode) {
+      const customer = await prisma.customer.findUnique({
+        where: { customerId: user.companyCode },
+        select: { companyName: true }
+      });
+      companyName = customer?.companyName ?? null;
+    }
+
     // FIXED: Construct proper URLs for frontend
     const responseUser = {
       ...user,
+      companyName,
       avatarUrl: user.avatar ? `/uploads/avatars/ava-${userId}-${user.avatar}` : null,
       signatureUrl: user.signature ? `/uploads/signatures/sig-${userId}-${user.signature}` : null
     };
