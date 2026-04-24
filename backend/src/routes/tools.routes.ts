@@ -7,7 +7,9 @@ import {
   getToolById,
   updateTool,
   deleteTool,
+  toggleBlockTool,
 } from '../controllers/tools.controller';
+import { requireRole } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
@@ -19,5 +21,6 @@ router.get('/', getTools);
 router.get('/:id', getToolById);
 router.post('/:id', updateTool);
 router.delete('/:id', deleteTool);
+router.patch('/:id/block', requireRole('admin'), toggleBlockTool);
 
 export default router;

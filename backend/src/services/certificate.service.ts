@@ -181,7 +181,10 @@ export class CertificateService {
   // Prepare calibration data for creation - include gasUnit from tool
   const calibrationDataCreate = data.calibrationData?.map(cal => ({
     gasType: cal.gasType,
-    gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
+    gasUnit: cal.gasUnit || toolGasUnit,
+    referenceNo: cal.referenceNo || null,
+    vendor: cal.vendor || null,
+    certDueDate: cal.certDueDate || null,
     standardValue: cal.standardValue,
     measurement1: cal.measurement1,
     measurement2: cal.measurement2,
@@ -199,7 +202,10 @@ export class CertificateService {
   const adjustedDataCreate = (data.hasAdjustment && data.adjustedData)
     ? data.adjustedData.map(adj => ({
         gasType: adj.gasType,
-        gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
+        gasUnit: adj.gasUnit || toolGasUnit,
+        referenceNo: adj.referenceNo || null,
+        vendor: adj.vendor || null,
+        certDueDate: adj.certDueDate || null,
         standardValue: adj.standardValue,
         measurement1: adj.measurement1,
         measurement2: adj.measurement2,
@@ -249,7 +255,9 @@ export class CertificateService {
       approvedById: null,
       approverSignature: null,
       remarks: data.remarks,
-      
+      certType: data.certType || 'gas',
+      calZeroData: data.calZeroData ? (data.calZeroData as Prisma.JsonObject) : undefined,
+
       // ADDED: Create related calibration data
       ...(calibrationDataCreate && calibrationDataCreate.length > 0 && {
         calibrationData: {
@@ -331,6 +339,10 @@ export class CertificateService {
       procedureNo: data.procedureNo,
       hasAdjustment: data.hasAdjustment,
       remarks: data.remarks,
+      certType: data.certType,
+      calZeroData: data.calZeroData !== undefined
+        ? (data.calZeroData as unknown as Prisma.JsonObject)
+        : undefined,
       dateOfCalibration: data.dateOfCalibration,
       ambientConditions: data.ambientConditions
         ? data.ambientConditions as unknown as Prisma.JsonObject

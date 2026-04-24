@@ -82,6 +82,9 @@ interface Tool {
   uncertaintyPercent: number;
   uncertaintyStandard?: number;
   dueDate: string;
+  isBlocked?: boolean;
+  isMixGas?: boolean;
+  components?: { id?: number; gasName: string; gasUnit: string; concentration: number; uncertaintyPercent: number; uncertaintyStandard?: number; }[];
   certFile?: string;
   toolImage?: string;
   createdAt?: string;
@@ -121,6 +124,24 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   const [allEquipment, setAllEquipment] = useState<Equipment[]>([]);
   const [allProbes, setAllProbes] = useState<Probe[]>([]);
   const [allTools, setAllTools] = useState<Tool[]>([]);
+  type MultiRow = {
+    gasName: string; gasUnit: string; standardValue: number; uncertaintyStandard: number;
+    measure1: number; measure2: number; measure3: number; meanUUC: number; error: number;
+    referenceNo: string; vendor: string; certDueDate: string;
+  };
+  const [certType, setCertType] = useState<'gas' | 'biogas' | 'cems'>('gas');
+  const [biogasToolIds, setBiogasToolIds] = useState<number[]>([0]);
+  const [multiRows, setMultiRows] = useState<MultiRow[]>([]);
+  const [multiAdjRows, setMultiAdjRows] = useState<MultiRow[]>([]);
+  const [toolSearchTerms, setToolSearchTerms] = useState<string[]>(['']);
+  const [showToolDropdowns, setShowToolDropdowns] = useState<boolean[]>([false]);
+  // Cal Zero state (Biogas/CEMS only)
+  const [calZeroToolId, setCalZeroToolId] = useState<number>(0);
+  const [calZeroSearchTerm, setCalZeroSearchTerm] = useState<string>('');
+  const [calZeroDropdownOpen, setCalZeroDropdownOpen] = useState<boolean>(false);
+  const [calZeroRows, setCalZeroRows] = useState<MultiRow[]>([]);
+  const [calZeroAdjRows, setCalZeroAdjRows] = useState<MultiRow[]>([]);
+  const [calZeroHasAdjustment, setCalZeroHasAdjustment] = useState<boolean>(false);
 
   // Filtered data
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
@@ -212,8 +233,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
     }
   });
 
-  // Updated steps configuration - reduced from 4 to 4 steps
-  const steps = [
+  // Dynamic steps — Biogas/CEMS: Cal Zero (step 3) comes before Measurements (step 4)
+  const steps = certType !== 'gas' ? [
+    { number: 1, title: 'Customer & Location', description: 'Select customer & calibration place' },
+    { number: 2, title: 'Equipment & Standard Gas', description: 'Select equipment, probe, zero gas & calibration gas' },
+    { number: 3, title: 'Cal Zero', description: 'Environment conditions & zero gas calibration' },
+    { number: 4, title: 'Measurements', description: 'Calibration gas measurements' },
+    { number: 5, title: 'Certificate Details', description: 'Final details & review' }
+  ] : [
     { number: 1, title: 'Customer & Location', description: 'Select customer & calibration place' },
     { number: 2, title: 'Equipment & Standard Gas', description: 'Select equipment, probe & gas cylinder' },
     { number: 3, title: 'Measurements & Environment', description: 'Record data & ambient conditions' },
@@ -390,6 +417,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       }
 
       const activeTools = toolsArray.filter((tool: any) => {
+        if (tool.isBlocked) return false;
         if (!tool.dueDate) return true;
         return new Date(tool.dueDate) > new Date();
       });
@@ -622,6 +650,44 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         }
       });
 
+      // Restore certType and Biogas/CEMS-specific state
+      if (fullCertificate.certType === 'cems' || fullCertificate.certType === 'biogas' || fullCertificate.certType === 'biogas_cems') {
+        setCertType(fullCertificate.certType === 'cems' ? 'cems' : 'biogas');
+
+        // Restore multiRows from calibrationData
+        const toRow = (r: any) => ({
+          gasName: r.gasType, gasUnit: r.gasUnit, standardValue: r.standardValue || 0,
+          uncertaintyStandard: r.uncertaintyStandard || 0,
+          measure1: r.measurement1 || 0, measure2: r.measurement2 || 0, measure3: r.measurement3 || 0,
+          meanUUC: r.meanValue || 0, error: r.error || 0,
+          referenceNo: r.referenceNo || '', vendor: r.vendor || '', certDueDate: r.certDueDate || '',
+        });
+        if (fullCertificate.calibrationData?.length > 0) {
+          setMultiRows(fullCertificate.calibrationData.map(toRow));
+          if (fullCertificate.adjustedData?.length > 0) {
+            setMultiAdjRows(fullCertificate.adjustedData.map(toRow));
+          }
+        }
+
+        // Restore cal zero state from calZeroData JSON
+        const czd = fullCertificate.calZeroData;
+        if (czd) {
+          if (czd.zeroToolId) setCalZeroToolId(czd.zeroToolId);
+          const toZeroRow = (r: any) => ({
+            gasName: r.gasType, gasUnit: r.gasUnit, standardValue: 0,
+            uncertaintyStandard: r.uncertaintyStandard || 0,
+            measure1: r.measurement1 || 0, measure2: r.measurement2 || 0, measure3: r.measurement3 || 0,
+            meanUUC: r.meanValue || 0, error: r.error || 0,
+            referenceNo: r.referenceNo || '', vendor: r.vendor || '', certDueDate: r.certDueDate || '',
+          });
+          if (czd.beforeRows?.length > 0) setCalZeroRows(czd.beforeRows.map(toZeroRow));
+          if (czd.afterRows?.length > 0) {
+            setCalZeroAdjRows(czd.afterRows.map(toZeroRow));
+            setCalZeroHasAdjustment(true);
+          }
+        }
+      }
+
       return fullCertificate;
     } catch (error) {
       console.error('Error loading certificate for edit:', error);
@@ -797,64 +863,92 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       setSelectedProbeIndex(-1);
     }
   }, [probeInput, filteredProbes]);
+  // Helper: convert a tool to measurement row(s)
+  const toolToRows = (tool: Tool): MultiRow[] => {
+    const refNo = tool.certificateNumber || '';
+    const vendor = tool.vendorName || '';
+    const certDueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
+    if (tool.isMixGas && tool.components?.length) {
+      return tool.components.map(c => ({
+        gasName: c.gasName, gasUnit: c.gasUnit, standardValue: c.concentration,
+        uncertaintyStandard: c.uncertaintyStandard ?? ((c.concentration * c.uncertaintyPercent) / 100),
+        measure1: 0, measure2: 0, measure3: 0, meanUUC: 0, error: 0,
+        referenceNo: refNo, vendor, certDueDate
+      }));
+    }
+    return [{
+      gasName: tool.gasName, gasUnit: tool.gasUnit, standardValue: tool.concentration,
+      uncertaintyStandard: tool.uncertaintyStandard ?? ((tool.concentration * (tool.uncertaintyPercent || 0)) / 100),
+      measure1: 0, measure2: 0, measure3: 0, meanUUC: 0, error: 0,
+      referenceNo: refNo, vendor, certDueDate
+    }];
+  };
+
+  // For single-gas mode: auto-fill standardValue when tool changes
   useEffect(() => {
-    if (formData.toolId > 0) {
+    if (certType === 'gas' && formData.toolId > 0) {
       const selectedTool = allTools.find(c => c.id === formData.toolId);
       if (selectedTool) {
-        console.log('🎯 Auto-filling standard value from tool:', selectedTool);
-
         const standardValue = selectedTool.concentration || 0;
-
-        console.log('📊 Tool data:', {
-          gasName: selectedTool.gasName,
-          concentration: selectedTool.concentration,
-          selectedValue: standardValue
-        });
-
+        const standardUncertainty = selectedTool.uncertaintyStandard || selectedTool.uncertaintyPercent || 0.09;
         setFormData(prev => ({
           ...prev,
           measurementData: {
             ...prev.measurementData,
-            beforeAdjustment: {
-              ...prev.measurementData.beforeAdjustment,
-              standardValue: standardValue
-            },
-            afterAdjustment: {
-              ...prev.measurementData.afterAdjustment,
-              standardValue: standardValue
-            }
-          }
-        }));
-
-        const standardUncertainty = selectedTool.uncertaintyStandard ||
-          selectedTool.uncertaintyPercent ||
-          0.09;
-
-        setFormData(prev => ({
-          ...prev,
+            beforeAdjustment: { ...prev.measurementData.beforeAdjustment, standardValue },
+            afterAdjustment: { ...prev.measurementData.afterAdjustment, standardValue }
+          },
           uncertaintyBudget: {
             ...prev.uncertaintyBudget,
-            before: {
-              ...prev.uncertaintyBudget.before,
-              standardUncertainty: standardUncertainty
-            },
-            after: {
-              ...prev.uncertaintyBudget.after,
-              standardUncertainty: standardUncertainty
-            }
+            before: { ...prev.uncertaintyBudget.before, standardUncertainty },
+            after: { ...prev.uncertaintyBudget.after, standardUncertainty }
           }
         }));
-
         setTimeout(() => {
           calculateMeasurements('beforeAdjustment');
           calculateMeasurements('afterAdjustment');
         }, 100);
-
-        console.log('✅ Standard value auto-filled with:', standardValue);
-        console.log('✅ Standard uncertainty auto-filled with:', standardUncertainty);
       }
     }
-  }, [formData.toolId, allTools]);
+  }, [formData.toolId, allTools, certType]);
+
+  // Rebuild multiRows whenever biogasToolIds changes — skip in edit/view (rows loaded from saved data)
+  useEffect(() => {
+    if (mode === 'edit' || mode === 'view') return;
+    const rows = biogasToolIds.flatMap(id => {
+      const tool = allTools.find(t => t.id === id);
+      return tool ? toolToRows(tool) : [];
+    });
+    setMultiRows(rows);
+    setMultiAdjRows(rows.map(r => ({ ...r })));
+  }, [biogasToolIds, allTools]);
+
+  // Rebuild calZeroRows when zero gas tool changes or standard gas tanks are added/removed
+  // Skip in edit/view (rows loaded from saved data). Uses gas name key so step-4 measurements don't reset rows.
+  const multiRowsToolKey = multiRows.map(r => r.gasName).join(',');
+  useEffect(() => {
+    if (mode === 'edit' || mode === 'view') return;
+    if (calZeroToolId > 0 && multiRows.length > 0) {
+      const rows = multiRows.map(r => ({
+        ...r, standardValue: 0, measure1: 0, measure2: 0, measure3: 0, meanUUC: 0, error: 0
+      }));
+      setCalZeroRows(rows);
+      setCalZeroAdjRows(rows.map(r => ({ ...r })));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calZeroToolId, multiRowsToolKey]);
+
+  // When cert type switches back to 'gas', reset cal zero state and clamp step
+  useEffect(() => {
+    if (certType === 'gas') {
+      setCalZeroToolId(0);
+      setCalZeroSearchTerm('');
+      setCalZeroRows([]);
+      setCalZeroAdjRows([]);
+      setCalZeroHasAdjustment(false);
+      setCurrentStep(prev => Math.min(prev, 4));
+    }
+  }, [certType]);
 
   // Recalculate when measurement values change
   useEffect(() => {
@@ -1053,9 +1147,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           // // In create mode, need both customer and calibration place
           // return formData.customerId !== '' && formData.calibrationPlace.trim() !== '';
         }
-      case 2: return formData.equipmentId !== '' && formData.probeId !== '' && formData.toolId !== 0;
-      case 3: return true; // Measurements step
-      case 4: return true; // Details step
+      case 2: {
+        const base = formData.equipmentId !== '' && formData.probeId !== '' && biogasToolIds.some(id => id > 0);
+        if (certType !== 'gas') return base && calZeroToolId > 0;
+        return base;
+      }
+      case 3: return true; // Cal Zero (biogas_cems) or Measurements (gas)
+      case 4: return true; // Measurements (biogas_cems) or Details (gas)
+      case 5: return true;
       default: return false;
     }
   };
@@ -1370,14 +1469,11 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       console.log('Starting certificate submission process...');
       console.log('Form data:', formData);
 
-      // Validate selected tool
-      const selectedTool = allTools.find(c => c.id === formData.toolId);
-
-      if (!selectedTool) {
-        throw new Error('Please select a standard gas tool for calibration');
+      // Validate selected tools
+      if (multiRows.length === 0) {
+        throw new Error('Please select at least one standard gas tank');
       }
-
-      console.log('Selected tool:', selectedTool);
+      const selectedTool = allTools.find(c => c.id === biogasToolIds.find(id => id > 0)!) || null;
 
       // Get current user ID
       const currentUserId = await getCurrentUserId();
@@ -1400,44 +1496,80 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         }
       }
 
-      // Prepare calibration data from before adjustment measurements
-      const calibrationData = [{
-        gasType: selectedTool.gasName || 'Unknown Gas',
-        standardValue: formData.measurementData.beforeAdjustment.standardValue,
-        measurement1: formData.measurementData.beforeAdjustment.measure1,
-        measurement2: formData.measurementData.beforeAdjustment.measure2,
-        measurement3: formData.measurementData.beforeAdjustment.measure3,
-        resolution: formData.resolution,
-        uncertaintyStandard: formData.uncertaintyBudget.before.standardUncertainty,
-        // Calculated fields from frontend
-        meanValue: formData.measurementData.beforeAdjustment.meanUUC,
-        error: formData.measurementData.beforeAdjustment.error,
-        repeatability: formData.uncertaintyBudget.before.repeatability,
-        combinedUncertainty: formData.uncertaintyBudget.before.combinedUncertainty,
-        expandedUncertainty: formData.uncertaintyBudget.before.expandedUncertainty
-      }];
+      // Prepare calibration data
+      const calibrationData = multiRows.length > 0
+        ? multiRows.map(row => ({
+            gasType: row.gasName,
+            gasUnit: row.gasUnit,
+            referenceNo: row.referenceNo,
+            vendor: row.vendor,
+            certDueDate: row.certDueDate,
+            standardValue: row.standardValue,
+            measurement1: row.measure1,
+            measurement2: row.measure2,
+            measurement3: row.measure3,
+            resolution: formData.resolution,
+            uncertaintyStandard: row.uncertaintyStandard,
+            meanValue: row.meanUUC,
+            error: row.error,
+            repeatability: formData.uncertaintyBudget.before.repeatability,
+            combinedUncertainty: formData.uncertaintyBudget.before.combinedUncertainty,
+            expandedUncertainty: formData.uncertaintyBudget.before.expandedUncertainty
+          }))
+        : [{
+            gasType: selectedTool?.gasName || 'Unknown Gas',
+            standardValue: formData.measurementData.beforeAdjustment.standardValue,
+            measurement1: formData.measurementData.beforeAdjustment.measure1,
+            measurement2: formData.measurementData.beforeAdjustment.measure2,
+            measurement3: formData.measurementData.beforeAdjustment.measure3,
+            resolution: formData.resolution,
+            uncertaintyStandard: formData.uncertaintyBudget.before.standardUncertainty,
+            meanValue: formData.measurementData.beforeAdjustment.meanUUC,
+            error: formData.measurementData.beforeAdjustment.error,
+            repeatability: formData.uncertaintyBudget.before.repeatability,
+            combinedUncertainty: formData.uncertaintyBudget.before.combinedUncertainty,
+            expandedUncertainty: formData.uncertaintyBudget.before.expandedUncertainty
+          }];
 
-      // Prepare adjusted data if adjustment is enabled
-      const adjustedData = formData.hasAdjustment ? [{
-        gasType: selectedTool.gasName || 'Unknown Gas',
+      // Prepare adjusted data
+      const adjustedData = formData.hasAdjustment
+        ? (multiAdjRows.length > 0
+          ? multiAdjRows.map(row => ({
+              gasType: row.gasName,
+              gasUnit: row.gasUnit,
+              referenceNo: row.referenceNo,
+              vendor: row.vendor,
+              certDueDate: row.certDueDate,
+              standardValue: row.standardValue,
+              measurement1: row.measure1,
+              measurement2: row.measure2,
+              measurement3: row.measure3,
+              resolution: formData.resolution,
+              uncertaintyStandard: row.uncertaintyStandard,
+              meanValue: row.meanUUC,
+              error: row.error,
+              repeatability: formData.uncertaintyBudget.after.repeatability,
+              combinedUncertainty: formData.uncertaintyBudget.after.combinedUncertainty,
+              expandedUncertainty: formData.uncertaintyBudget.after.expandedUncertainty
+            }))
+          : [{
+        gasType: selectedTool?.gasName || 'Unknown Gas',
         standardValue: formData.measurementData.afterAdjustment.standardValue,
         measurement1: formData.measurementData.afterAdjustment.measure1,
         measurement2: formData.measurementData.afterAdjustment.measure2,
         measurement3: formData.measurementData.afterAdjustment.measure3,
         resolution: formData.resolution,
         uncertaintyStandard: formData.uncertaintyBudget.after.standardUncertainty,
-        // Calculated fields from frontend
         meanValue: formData.measurementData.afterAdjustment.meanUUC,
         error: formData.measurementData.afterAdjustment.error,
         repeatability: formData.uncertaintyBudget.after.repeatability,
         combinedUncertainty: formData.uncertaintyBudget.after.combinedUncertainty,
         expandedUncertainty: formData.uncertaintyBudget.after.expandedUncertainty
-      }] : undefined;
+      }])
+        : undefined;
 
       // Validate measurement data
-      if (calibrationData[0].standardValue <= 0) {
-        throw new Error('Standard value must be greater than 0');
-      }
+      if (multiRows.length === 0) throw new Error('Please select at least one standard gas tank');
 
       if (calibrationData[0].measurement1 < 0 || calibrationData[0].measurement2 < 0 || calibrationData[0].measurement3 < 0) {
         throw new Error('Measurements cannot be negative');
@@ -1477,7 +1609,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         customerId: formData.customerId,
         equipmentId: formData.equipmentId,
         probeId: formData.probeId,
-        toolId: formData.toolId,
+        toolId: biogasToolIds.find(id => id > 0) || formData.toolId,
         technicianName: formData.technicianName,
         calibrationPlace: formData.calibrationPlace,
         procedureNo: formData.procedureNo,
@@ -1503,7 +1635,43 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         createdById: currentUserId,
         calibrationData: calibrationData,
         adjustedData: adjustedData,
-        remarks: formData.remarks || undefined
+        remarks: formData.remarks || undefined,
+        certType: certType,
+        calZeroData: (() => {
+          if (certType === 'gas' || calZeroToolId <= 0) return undefined;
+          const zeroTool = allTools.find(t => t.id === calZeroToolId);
+          return {
+            zeroToolId: calZeroToolId,
+            zeroReferenceNo: zeroTool?.certificateNumber || '',
+            zeroVendor: zeroTool?.vendorName || '',
+            zeroDueDate: zeroTool?.dueDate ? new Date(zeroTool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '',
+            zeroGasName: zeroTool ? `${zeroTool.gasName} ${zeroTool.concentration} ${zeroTool.gasUnit || '%'}` : '',
+            beforeRows: calZeroRows.map(row => ({
+              gasType: row.gasName,
+              gasUnit: row.gasUnit,
+              standardValue: 0,
+              measurement1: row.measure1,
+              measurement2: row.measure2,
+              measurement3: row.measure3,
+              resolution: formData.resolution,
+              uncertaintyStandard: row.uncertaintyStandard,
+              meanValue: row.meanUUC,
+              error: row.error
+            })),
+            afterRows: calZeroHasAdjustment ? calZeroAdjRows.map(row => ({
+              gasType: row.gasName,
+              gasUnit: row.gasUnit,
+              standardValue: 0,
+              measurement1: row.measure1,
+              measurement2: row.measure2,
+              measurement3: row.measure3,
+              resolution: formData.resolution,
+              uncertaintyStandard: row.uncertaintyStandard,
+              meanValue: row.meanUUC,
+              error: row.error
+            })) : []
+          };
+        })()
       };
       console.log('🚀 Sending to backend:', {
         toolId: certificateData.toolId,
@@ -2049,86 +2217,219 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           </div>
         </div>
 
-        {/* Standard Gas Tool Section - Keep as is */}
+        {/* Certificate Type + Standard Gas Tool Section */}
         <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
           <h4 className="text-md font-medium text-purple-800 mb-3 flex items-center">
             <HiBeaker className="w-4 h-4 mr-2" />
-            Standard Gas Tool Selection
+            Certificate Type & Standard Gas
           </h4>
 
-          <div>
-            <label className="block text-sm font-medium text-purple-700 mb-2">
-              Standard Gas Tool for Calibration ({allTools.length} available)
-            </label>
-            {allTools.length === 0 ? (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                <div className="text-yellow-800">
-                  ⚠️ No gas tools available. Please check:
-                  <ul className="mt-2 text-sm list-disc list-inside">
-                    <li>Gas tools are not expired</li>
-                    <li>API endpoint /api/tools is working</li>
-                    <li>Gas tools exist in the database</li>
-                  </ul>
-                </div>
-              </div>
-            ) : (
-              <select
-                name="toolId"
-                value={formData.toolId}
-                onChange={handleInputChange}
+          {/* Type Selector */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-purple-700 mb-2">Certificate Type</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setCertType('gas'); setBiogasToolIds([0]); }}
                 disabled={mode === 'view'}
-                required
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${certType === 'gas' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-300 hover:border-purple-400'}`}
               >
-                <option value="">Select Standard Gas Tool</option>
-                {allTools.map((tool) => (
-                  <option key={tool.id} value={tool.id}>
-                    {tool.gasName} - {tool.concentration}{tool.gasUnit || 'ppm'} - {tool.certificateNumber}
-                  </option>
-                ))}
-              </select>
-            )}
+                Gas
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCertType('biogas'); setFormData(prev => ({ ...prev, toolId: 0 })); }}
+                disabled={mode === 'view'}
+                className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${certType === 'biogas' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-300 hover:border-purple-400'}`}
+              >
+                Biogas
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCertType('cems'); setFormData(prev => ({ ...prev, toolId: 0 })); }}
+                disabled={mode === 'view'}
+                className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${certType === 'cems' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-300 hover:border-purple-400'}`}
+              >
+                CEMs
+              </button>
+            </div>
           </div>
 
-          {/* Show selected gas tool details */}
-          {formData.toolId > 0 && selectedTool && (
-            <div className="mt-4 p-3 bg-white border border-purple-200 rounded-md">
-              <div className="text-sm font-medium text-purple-800 mb-2">
-                ✓ Selected Standard Gas Tool Details:
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-purple-700">
-                <div><strong>Gas Name:</strong> {selectedTool.gasName}</div>
-                <div><strong>Concentration:</strong> {selectedTool.concentration} {selectedTool.gasUnit || 'ppm'}</div>
-                <div><strong>Vendor:</strong> {selectedTool.vendorName}</div>
-                <div><strong>Certificate No:</strong> {selectedTool.certificateNumber}</div>
-                {selectedTool.dueDate && (
-                  <div className="col-span-1 sm:col-span-2">
-                    <strong>Due Date:</strong> {new Date(selectedTool.dueDate).toLocaleDateString()}
+          {/* Biogas/CEMS: Zero Gas Standard selector (above standard gas) */}
+          {certType !== 'gas' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-teal-700 mb-1">
+                Zero Gas Standard <span className="text-red-500">*</span>
+              </label>
+              <p className="text-xs text-teal-600 mb-2">Select zero gas tank (e.g., N₂ 99.999 %) used for Cal Zero step</p>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={(() => { const t = allTools.find(t => t.id === calZeroToolId); return t && !calZeroDropdownOpen ? (t.isMixGas ? `[Mixed] ${t.certificateNumber} - ${t.vendorName}` : `${t.gasName} - ${t.concentration} ${t.gasUnit || '%'} — ${t.certificateNumber}`) : calZeroSearchTerm; })()}
+                  onChange={e => { setCalZeroSearchTerm(e.target.value); setCalZeroToolId(0); setCalZeroDropdownOpen(true); }}
+                  onFocus={() => { setCalZeroDropdownOpen(true); if (allTools.find(t => t.id === calZeroToolId)) setCalZeroSearchTerm(''); }}
+                  onBlur={() => setTimeout(() => setCalZeroDropdownOpen(false), 150)}
+                  disabled={mode === 'view'}
+                  placeholder="Type gas name, cert no., or vendor…"
+                  className="w-full px-3 py-2 text-sm border border-teal-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100"
+                />
+                {calZeroDropdownOpen && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-teal-300 rounded-md shadow-lg max-h-52 overflow-y-auto">
+                    {allTools.filter(t => calZeroSearchTerm.trim() === '' || t.gasName.toLowerCase().includes(calZeroSearchTerm.toLowerCase()) || t.certificateNumber.toLowerCase().includes(calZeroSearchTerm.toLowerCase()) || t.vendorName.toLowerCase().includes(calZeroSearchTerm.toLowerCase())).length === 0
+                      ? <div className="px-3 py-2 text-sm text-gray-400">No tools found</div>
+                      : allTools.filter(t => calZeroSearchTerm.trim() === '' || t.gasName.toLowerCase().includes(calZeroSearchTerm.toLowerCase()) || t.certificateNumber.toLowerCase().includes(calZeroSearchTerm.toLowerCase()) || t.vendorName.toLowerCase().includes(calZeroSearchTerm.toLowerCase())).map(tool => (
+                        <div key={tool.id} onMouseDown={() => { setCalZeroToolId(tool.id); setCalZeroSearchTerm(''); setCalZeroDropdownOpen(false); }}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-teal-50 border-b border-gray-100 last:border-b-0">
+                          <div className="font-medium text-gray-800">{tool.isMixGas ? `[Mixed] ${tool.certificateNumber} - ${tool.vendorName}` : `${tool.gasName} - ${tool.concentration} ${tool.gasUnit || '%'} — ${tool.certificateNumber}`}</div>
+                          <div className="text-xs text-gray-400">{tool.vendorName} · Due: {new Date(tool.dueDate).toLocaleDateString('en-GB')}</div>
+                        </div>
+                      ))
+                    }
                   </div>
                 )}
-                {(selectedTool.uncertaintyPercent || selectedTool.uncertaintyStandard) && (
-                  <div className="col-span-1 sm:col-span-2">
-                    <strong>Uncertainty:</strong> ±{
-                      selectedTool.uncertaintyPercent ||
-                      selectedTool.uncertaintyStandard
-                    }%
-                  </div>
-                )}
               </div>
+              {calZeroToolId > 0 && (() => { const t = allTools.find(t => t.id === calZeroToolId); return t ? <div className="mt-1 text-xs text-teal-600">✓ {t.gasName} {t.concentration} {t.gasUnit || '%'} — {t.vendorName} — Cert: {t.certificateNumber}</div> : null; })()}
+              {calZeroToolId === 0 && <div className="mt-1 text-xs text-red-500">Required — select a zero gas to proceed</div>}
+            </div>
+          )}
 
-              {/* Auto-fill notification */}
-              <div className="mt-3 p-2 bg-green-100 border border-green-300 rounded-md">
-                <div className="text-xs text-green-800 flex items-center">
-                  <span className="mr-1">🎯</span>
-                  <strong>Auto-filled:</strong> Standard Value will be set to {selectedTool.concentration} {selectedTool.gasUnit || 'ppm'} in measurement section
+          {/* Gas / Biogas/CEMS: searchable multi-tank selector */}
+          {(certType === 'gas' || certType === 'biogas' || certType === 'cems') && (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-purple-700">
+                Standard Gas ({allTools.length} available)
+              </label>
+              {biogasToolIds.map((toolId, idx) => {
+                const selected = allTools.find(t => t.id === toolId);
+                const term = toolSearchTerms[idx] ?? '';
+                const open = showToolDropdowns[idx] ?? false;
+                const toolLabel = (t: Tool) => t.isMixGas
+                  ? `[Mixed] ${t.certificateNumber} - ${t.vendorName}`
+                  : `${t.gasName} - ${t.concentration} ${t.gasUnit || 'ppm'} — ${t.certificateNumber}`;
+                const filtered = allTools.filter(t =>
+                  term.trim() === '' ||
+                  t.gasName.toLowerCase().includes(term.toLowerCase()) ||
+                  t.certificateNumber.toLowerCase().includes(term.toLowerCase()) ||
+                  t.vendorName.toLowerCase().includes(term.toLowerCase())
+                );
+                return (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={selected && !open ? toolLabel(selected) : term}
+                          onChange={e => {
+                            const updated = [...toolSearchTerms];
+                            while (updated.length <= idx) updated.push('');
+                            updated[idx] = e.target.value;
+                            setToolSearchTerms(updated);
+                            // Clear selection if user edits
+                            const updatedIds = [...biogasToolIds];
+                            updatedIds[idx] = 0;
+                            setBiogasToolIds(updatedIds);
+                            const updatedOpen = [...showToolDropdowns];
+                            while (updatedOpen.length <= idx) updatedOpen.push(false);
+                            updatedOpen[idx] = true;
+                            setShowToolDropdowns(updatedOpen);
+                          }}
+                          onFocus={() => {
+                            const updatedOpen = [...showToolDropdowns];
+                            while (updatedOpen.length <= idx) updatedOpen.push(false);
+                            updatedOpen[idx] = true;
+                            setShowToolDropdowns(updatedOpen);
+                            const updatedTerms = [...toolSearchTerms];
+                            while (updatedTerms.length <= idx) updatedTerms.push('');
+                            if (selected) updatedTerms[idx] = '';
+                            setToolSearchTerms(updatedTerms);
+                          }}
+                          onBlur={() => {
+                            setTimeout(() => {
+                              const updatedOpen = [...showToolDropdowns];
+                              while (updatedOpen.length <= idx) updatedOpen.push(false);
+                              updatedOpen[idx] = false;
+                              setShowToolDropdowns(updatedOpen);
+                            }, 150);
+                          }}
+                          disabled={mode === 'view'}
+                          placeholder="Type gas name, cert no., or vendor…"
+                          className="w-full px-3 py-2 text-sm border border-purple-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                        />
+                        {open && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-purple-300 rounded-md shadow-lg max-h-52 overflow-y-auto">
+                            {filtered.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-gray-400">No tools found</div>
+                            ) : filtered.map(tool => (
+                              <div
+                                key={tool.id}
+                                onMouseDown={() => {
+                                  const updatedIds = [...biogasToolIds];
+                                  updatedIds[idx] = tool.id;
+                                  setBiogasToolIds(updatedIds);
+                                  const updatedTerms = [...toolSearchTerms];
+                                  while (updatedTerms.length <= idx) updatedTerms.push('');
+                                  updatedTerms[idx] = '';
+                                  setToolSearchTerms(updatedTerms);
+                                  const updatedOpen = [...showToolDropdowns];
+                                  while (updatedOpen.length <= idx) updatedOpen.push(false);
+                                  updatedOpen[idx] = false;
+                                  setShowToolDropdowns(updatedOpen);
+                                }}
+                                className="px-3 py-2 text-sm cursor-pointer hover:bg-purple-50 border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="font-medium text-gray-800">{toolLabel(tool)}</div>
+                                {!tool.isMixGas && (
+                                  <div className="text-xs text-gray-400">{tool.vendorName} · Due: {new Date(tool.dueDate).toLocaleDateString('en-GB')}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {biogasToolIds.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBiogasToolIds(biogasToolIds.filter((_, i) => i !== idx));
+                            setToolSearchTerms(toolSearchTerms.filter((_, i) => i !== idx));
+                            setShowToolDropdowns(showToolDropdowns.filter((_, i) => i !== idx));
+                          }}
+                          disabled={mode === 'view'}
+                          className="text-red-400 hover:text-red-600 font-bold text-lg px-1"
+                        >×</button>
+                      )}
+                    </div>
+                    {selected && (
+                      <div className="ml-1 text-xs text-purple-600">
+                        {selected.isMixGas
+                          ? `Mixed Gas · ${selected.vendorName} · Cert: ${selected.certificateNumber}`
+                          : `${selected.concentration} ${selected.gasUnit || 'ppm'} — ${selected.vendorName} — Cert: ${selected.certificateNumber}`}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  setBiogasToolIds([...biogasToolIds, 0]);
+                  setToolSearchTerms([...toolSearchTerms, '']);
+                  setShowToolDropdowns([...showToolDropdowns, false]);
+                }}
+                disabled={mode === 'view'}
+                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+              >+ Add Standard Gas</button>
+              {multiRows.length > 0 && (
+                <div className="mt-1 p-2 bg-green-100 border border-green-300 rounded text-xs text-green-800">
+                  ✓ <strong>{multiRows.length} gas{multiRows.length > 1 ? 'es' : ''} loaded</strong> — enter measurements in the Measurements step
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Configuration Summary */}
-        {formData.equipmentId && formData.probeId && formData.toolId > 0 && (
+        {formData.equipmentId && formData.probeId && biogasToolIds.some(id => id > 0) && (
           <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-md">
             <div className="text-sm font-medium text-green-800 mb-2">
               📋 Complete Equipment & Gas Configuration:
@@ -2164,6 +2465,26 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
   // STEP 3: Measurements & Environment - RESPONSIVE VERSION
   const renderMeasurementsAndEnvironment = () => {
+    const isMultiMode = multiRows.length > 0;
+
+    const calcRow = (row: MultiRow, field: 'measure1' | 'measure2' | 'measure3', val: number): MultiRow => {
+      const updated = { ...row, [field]: val };
+      const mean = (
+        (field === 'measure1' ? val : row.measure1) +
+        (field === 'measure2' ? val : row.measure2) +
+        (field === 'measure3' ? val : row.measure3)
+      ) / 3;
+      updated.meanUUC = Math.round(mean * 1000) / 1000;
+      updated.error = Math.round((mean - row.standardValue) * 1000) / 1000;
+      return updated;
+    };
+    const updateRow = (i: number, field: 'measure1' | 'measure2' | 'measure3', val: number) => {
+      setMultiRows(prev => prev.map((row, idx) => idx !== i ? row : calcRow(row, field, val)));
+    };
+    const updateAdjRow = (i: number, field: 'measure1' | 'measure2' | 'measure3', val: number) => {
+      setMultiAdjRows(prev => prev.map((row, idx) => idx !== i ? row : calcRow(row, field, val)));
+    };
+
     return (
       <div className="space-y-6">
         <h3 className="text-lg font-medium text-gray-900 flex items-center">
@@ -2171,8 +2492,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           Calibration Measurements & Environmental Conditions
         </h3>
 
-        {/* Environmental Conditions Section - RESPONSIVE */}
-        <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+        {/* Environmental Conditions Section - hidden for biogas_cems (captured in Cal Zero step) */}
+        {certType === 'gas' && <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
           <h4 className="text-md font-medium text-blue-800 mb-3 flex items-center">
             <HiCog className="w-4 h-4 mr-2" />
             Ambient Environmental Conditions
@@ -2269,7 +2590,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
               />
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Calibration Parameters - RESPONSIVE */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
@@ -2304,6 +2625,64 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         </div>
 
         {/* STEP 1: Initial Measurements (Before Adjustment) */}
+        {isMultiMode ? (
+          <div className="p-4 border border-blue-200 rounded-xl bg-blue-50 shadow-sm">
+            <h4 className="text-sm font-semibold text-blue-800 flex items-center mb-3">
+              <span className="bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 font-bold">1</span>
+              Mixed Gas Calibration Measurements
+            </h4>
+            <div className="overflow-x-auto rounded-xl border border-blue-200 shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-blue-700 text-white">
+                    <th className="px-4 py-3 text-left font-semibold tracking-wide rounded-tl-xl">Gas</th>
+                    <th className="px-3 py-3 text-left font-semibold tracking-wide">Unit</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Std Value</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 1</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 2</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 3</th>
+                    <th className="px-3 py-3 text-center font-semibold tracking-wide">Mean</th>
+                    <th className="px-4 py-3 text-center font-semibold tracking-wide rounded-tr-xl">Error</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-blue-100 bg-white">
+                  {multiRows.map((row, i) => (
+                    <tr key={i} className="hover:bg-blue-50 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-gray-900">{row.gasName}</td>
+                      <td className="px-3 py-3 text-gray-500 text-xs font-medium">{row.gasUnit}</td>
+                      <td className="px-3 py-3 text-center font-mono text-gray-700 font-medium">{row.standardValue}</td>
+                      <td className="px-3 py-2">
+                        <input type="number" step="0.1" value={row.measure1 || ''} disabled={mode === 'view'}
+                          onChange={e => updateRow(i, 'measure1', Number(e.target.value))}
+                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input type="number" step="0.1" value={row.measure2 || ''} disabled={mode === 'view'}
+                          onChange={e => updateRow(i, 'measure2', Number(e.target.value))}
+                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input type="number" step="0.1" value={row.measure3 || ''} disabled={mode === 'view'}
+                          onChange={e => updateRow(i, 'measure3', Number(e.target.value))}
+                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="inline-block px-3 py-1 rounded-md bg-blue-100 text-blue-700 font-mono font-semibold text-sm">
+                          {row.meanUUC.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-block px-3 py-1 rounded-md font-mono font-semibold text-sm ${row.error > 0 ? 'bg-red-50 text-red-500' : row.error < 0 ? 'bg-indigo-50 text-indigo-500' : 'bg-blue-50 text-blue-400'}`}>
+                          {row.error.toFixed(2)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
         <div className="p-4 border-2 border-orange-300 rounded-lg bg-orange-50">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-md font-medium text-orange-800 flex items-center">
@@ -2431,6 +2810,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
               </div>
             )}
         </div>
+        )}
 
         {/* STEP 2: Adjustment Decision */}
         <div className="p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
@@ -2468,18 +2848,69 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
         {/* STEP 3: After Adjustment Measurements (Only show if adjustment is checked) */}
         {formData.hasAdjustment && (
-          <div className="p-4 border-2 border-green-300 rounded-lg bg-green-50">
+          <div className="p-4 border border-blue-200 rounded-xl bg-blue-50 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-md font-medium text-green-800 flex items-center">
-                <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">3</span>
-                Post-Adjustment Measurements (After Equipment Adjustment)
+              <h4 className="text-sm font-semibold text-blue-800 flex items-center">
+                <span className="bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 font-bold">3</span>
+                Post-Adjustment Measurements
               </h4>
-              <div className="text-sm text-green-600 font-medium">
+              <div className="text-xs text-blue-600 font-semibold uppercase tracking-wide">
                 Fill after adjusting equipment
               </div>
             </div>
 
-            {/* After Adjustment Grid - RESPONSIVE */}
+            {isMultiMode ? (
+              <div className="overflow-x-auto rounded-xl border border-blue-200 shadow-sm">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-blue-700 text-white">
+                      <th className="px-4 py-3 text-left font-semibold tracking-wide rounded-tl-xl">Gas</th>
+                      <th className="px-3 py-3 text-left font-semibold tracking-wide">Unit</th>
+                      <th className="px-3 py-3 text-center font-semibold tracking-wide">Std Value</th>
+                      <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 1</th>
+                      <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 2</th>
+                      <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 3</th>
+                      <th className="px-3 py-3 text-center font-semibold tracking-wide">Mean</th>
+                      <th className="px-4 py-3 text-center font-semibold tracking-wide rounded-tr-xl">Error</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-blue-100 bg-white">
+                    {multiAdjRows.map((row, i) => (
+                      <tr key={i} className="hover:bg-blue-50 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-gray-900">{row.gasName}</td>
+                        <td className="px-3 py-3 text-gray-500 text-xs font-medium">{row.gasUnit}</td>
+                        <td className="px-3 py-3 text-center font-mono text-gray-700 font-medium">{row.standardValue}</td>
+                        <td className="px-3 py-2">
+                          <input type="number" step="0.1" value={row.measure1 || ''} disabled={mode === 'view'}
+                            onChange={e => updateAdjRow(i, 'measure1', Number(e.target.value))}
+                            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input type="number" step="0.1" value={row.measure2 || ''} disabled={mode === 'view'}
+                            onChange={e => updateAdjRow(i, 'measure2', Number(e.target.value))}
+                            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input type="number" step="0.1" value={row.measure3 || ''} disabled={mode === 'view'}
+                            onChange={e => updateAdjRow(i, 'measure3', Number(e.target.value))}
+                            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <span className="inline-block px-3 py-1 rounded-md bg-blue-100 text-blue-700 font-mono font-semibold text-sm">
+                            {row.meanUUC.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-block px-3 py-1 rounded-md font-mono font-semibold text-sm ${row.error > 0 ? 'bg-red-50 text-red-500' : row.error < 0 ? 'bg-indigo-50 text-indigo-500' : 'bg-blue-50 text-blue-400'}`}>
+                            {row.error.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
               <div>
                 <label className="block text-xs font-medium text-green-700 mb-1">
@@ -2577,6 +3008,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                 />
               </div>
             </div>
+            )}
 
             {/* Show progress indicator for after adjustment */}
             {formData.measurementData.afterAdjustment.measure1 > 0 &&
@@ -2642,7 +3074,185 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
     );
   };
 
-  // STEP 4: Certificate Details - RESPONSIVE VERSION
+  // STEP 4 (Biogas/CEMS only): Cal Zero measurements
+  const renderCalZeroStep = () => {
+    const calcZeroRow = (row: MultiRow, field: 'measure1' | 'measure2' | 'measure3', val: number): MultiRow => {
+      const updated = { ...row, [field]: val };
+      const mean = (
+        (field === 'measure1' ? val : row.measure1) +
+        (field === 'measure2' ? val : row.measure2) +
+        (field === 'measure3' ? val : row.measure3)
+      ) / 3;
+      updated.meanUUC = Math.round(mean * 1000) / 1000;
+      updated.error = Math.round((mean - 0) * 1000) / 1000; // std value is 0
+      return updated;
+    };
+
+    const selectedZeroTool = allTools.find(t => t.id === calZeroToolId);
+
+    const measureTable = (rows: MultiRow[], updateFn: (i: number, f: 'measure1' | 'measure2' | 'measure3', v: number) => void) => (
+      <div className="overflow-x-auto rounded-xl border border-blue-200 shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-blue-700 text-white">
+              <th className="px-4 py-3 text-left font-semibold tracking-wide">Gas</th>
+              <th className="px-3 py-3 text-left font-semibold tracking-wide">Unit</th>
+              <th className="px-3 py-3 text-center font-semibold tracking-wide">Std (0)</th>
+              <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 1</th>
+              <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 2</th>
+              <th className="px-3 py-3 text-center font-semibold tracking-wide">Measure 3</th>
+              <th className="px-3 py-3 text-center font-semibold tracking-wide">Mean</th>
+              <th className="px-4 py-3 text-center font-semibold tracking-wide">Error</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-blue-100 bg-white">
+            {rows.map((row, i) => (
+              <tr key={i} className="hover:bg-blue-50 transition-colors">
+                <td className="px-4 py-3 font-semibold text-gray-900">{row.gasName}</td>
+                <td className="px-3 py-3 text-gray-500 text-xs font-medium">{row.gasUnit}</td>
+                <td className="px-3 py-3 text-center font-mono text-gray-400 text-xs">0.00</td>
+                <td className="px-3 py-2">
+                  <input type="number" step="0.01" value={row.measure1} disabled={mode === 'view'}
+                    onChange={e => updateFn(i, 'measure1', Number(e.target.value))}
+                    className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                </td>
+                <td className="px-3 py-2">
+                  <input type="number" step="0.01" value={row.measure2} disabled={mode === 'view'}
+                    onChange={e => updateFn(i, 'measure2', Number(e.target.value))}
+                    className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                </td>
+                <td className="px-3 py-2">
+                  <input type="number" step="0.01" value={row.measure3} disabled={mode === 'view'}
+                    onChange={e => updateFn(i, 'measure3', Number(e.target.value))}
+                    className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-center font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 transition-colors" />
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <span className="inline-block px-3 py-1 rounded-md bg-blue-100 text-blue-700 font-mono font-semibold text-sm">
+                    {row.meanUUC.toFixed(3)}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <span className={`inline-block px-3 py-1 rounded-md font-mono font-semibold text-sm ${
+                    row.error > 0 ? 'bg-red-50 text-red-500' : row.error < 0 ? 'bg-indigo-50 text-indigo-500' : 'bg-blue-50 text-blue-400'
+                  }`}>
+                    {row.error.toFixed(3)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+
+    return (
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-900 flex items-center">
+          <HiBeaker className="w-5 h-5 mr-3 text-teal-600" />
+          Cal Zero — Environment & Zero Gas Calibration
+        </h3>
+
+        {/* Zero gas info banner */}
+        {selectedZeroTool && (
+          <div className="p-3 bg-teal-50 border border-teal-200 rounded-md text-sm text-teal-800">
+            <strong>Zero Gas:</strong> {selectedZeroTool.gasName} {selectedZeroTool.concentration} {selectedZeroTool.gasUnit || '%'} — {selectedZeroTool.vendorName} — Cert: {selectedZeroTool.certificateNumber}
+          </div>
+        )}
+
+        {/* Environment Conditions */}
+        <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h4 className="text-md font-medium text-blue-800 mb-3 flex items-center">
+            <HiCog className="w-4 h-4 mr-2" />
+            Ambient Environmental Conditions
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              { label: 'Temperature (°C)', name: 'ambient.temperature', step: '0.1' },
+              { label: 'Humidity (%RH)', name: 'ambient.humidity', step: '0.1' },
+              { label: 'Pressure (mbar)', name: 'ambient.pressure', step: '0.1' },
+              { label: 'Gas Temperature (°C)', name: 'ambient.gasTemperature', step: '0.1' },
+              { label: 'Flow Rate (mL/min)', name: 'ambient.flowRate', step: '1' },
+              { label: 'Gas Pressure (mbar)', name: 'ambient.gasPressure', step: '0.1' },
+            ].map(({ label, name, step }) => (
+              <div key={name}>
+                <label className="block text-sm font-medium text-blue-700 mb-1">{label}</label>
+                <input type="number" step={step} name={name}
+                  value={(formData.ambientConditions as any)[name.split('.')[1]]}
+                  onChange={handleInputChange} disabled={mode === 'view'}
+                  className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Cal Zero measurement tables */}
+        {calZeroToolId > 0 && calZeroRows.length > 0 && (
+          <>
+            <div className="p-4 border border-blue-200 rounded-xl bg-blue-50 shadow-sm">
+              <h4 className="text-sm font-semibold text-blue-800 flex items-center mb-3">
+                <span className="bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 font-bold">1</span>
+                Cal Zero Measurements (Before Adjustment)
+              </h4>
+              {measureTable(calZeroRows,
+                (i, f, v) => setCalZeroRows(prev => prev.map((r, idx) => idx !== i ? r : calcZeroRow(r, f, v)))
+              )}
+            </div>
+
+            <div className="p-4 border-2 border-teal-300 rounded-lg bg-teal-50">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-md font-medium text-teal-800 flex items-center">
+                  <span className="bg-teal-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">2</span>
+                  Cal Zero Adjustment
+                </h4>
+              </div>
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="calZeroHasAdj"
+                    checked={calZeroHasAdjustment}
+                    onChange={e => setCalZeroHasAdjustment(e.target.checked)}
+                    disabled={mode === 'view'}
+                    className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded disabled:opacity-50"
+                  />
+                  <span className="text-sm font-medium text-teal-700">
+                    Equipment was adjusted based on initial measurements
+                  </span>
+                </label>
+              </div>
+              {calZeroHasAdjustment && (
+                <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
+                  <div className="text-sm text-yellow-800">
+                    <strong>Note:</strong> After checking this box, please adjust your equipment and then fill the measurements below.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {calZeroHasAdjustment && (
+              <div className="p-4 border border-blue-200 rounded-xl bg-blue-50 shadow-sm">
+                <h4 className="text-sm font-semibold text-blue-800 flex items-center mb-3">
+                  <span className="bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 font-bold">2</span>
+                  Cal Zero Measurements (After Adjustment)
+                </h4>
+                {measureTable(calZeroAdjRows,
+                  (i, f, v) => setCalZeroAdjRows(prev => prev.map((r, idx) => idx !== i ? r : calcZeroRow(r, f, v)))
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {calZeroRows.length === 0 && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+            ⚠ No calibration gases loaded. Please select standard gas in Step 2 first.
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // STEP 4/5: Certificate Details - RESPONSIVE VERSION
   const renderCertificateDetails = () => {
     return (
       <div className="space-y-4">
@@ -3197,11 +3807,17 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
               {/* STEP 2: Equipment & Standard Gas (Combined) */}
               {(currentStep === 2 || mode !== 'create') && formData.customerId && formData.calibrationPlace && renderEquipmentAndGas()}
 
-              {/* STEP 3: Measurements & Environment (Combined) */}
-              {(currentStep === 3 || mode !== 'create') && formData.equipmentId && formData.probeId && formData.toolId > 0 && renderMeasurementsAndEnvironment()}
+              {/* STEP 3: Cal Zero for biogas_cems, OR Measurements for gas */}
+              {certType !== 'gas'
+                ? (currentStep === 3 || mode !== 'create') && renderCalZeroStep()
+                : (currentStep === 3 || mode !== 'create') && formData.equipmentId && formData.probeId && biogasToolIds.some(id => id > 0) && renderMeasurementsAndEnvironment()
+              }
 
-              {/* STEP 4: Certificate Details */}
-              {(currentStep === 4 || mode !== 'create') && renderCertificateDetails()}
+              {/* STEP 4: Measurements for biogas/cems (gas has no step 4) */}
+              {certType !== 'gas' && (currentStep === 4 || mode !== 'create') && formData.equipmentId && formData.probeId && (biogasToolIds.some(id => id > 0) || (mode !== 'create' && multiRows.length > 0)) && renderMeasurementsAndEnvironment()}
+
+              {/* Last step: Certificate Details */}
+              {(currentStep === steps.length || mode !== 'create') && renderCertificateDetails()}
 
             </div>
           </div>

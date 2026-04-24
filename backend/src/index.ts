@@ -44,7 +44,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 
- const allowedOrigins = ['https://entech-online.com', 'http://localhost:5050']//process.env.FRONTEND_URL 
+ const allowedOrigins = ['https://entech-online.com', 'http://localhost:5050', 'http://localhost:5173', 'http://localhost:5174']
 //   ? process.env.FRONTEND_URL
 //   : ['http://localhost:5050', 'http://localhost:5174', 'http://localhost:4040'];
 

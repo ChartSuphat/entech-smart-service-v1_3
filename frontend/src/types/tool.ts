@@ -1,4 +1,13 @@
 // types/tool.ts
+export type MixGasComponent = {
+  id?: number;
+  gasName: string;
+  gasUnit: string;
+  concentration: number;
+  uncertaintyPercent: number;
+  uncertaintyStandard?: number;
+};
+
 export type Tool = {
   id: number;
   certificateNumber: string;
@@ -9,8 +18,11 @@ export type Tool = {
   uncertaintyPercent: number;
   uncertaintyStandard?: number;
   dueDate: string;
-  certFile?: string;         // URL path to cert file (for display)
-  toolImage?: string;        // URL path to tool image (for display)
+  isBlocked?: boolean;
+  isMixGas?: boolean;
+  components?: MixGasComponent[];
+  certFile?: string;
+  toolImage?: string;
   createdAt?: string;
   updatedAt?: string;
 };

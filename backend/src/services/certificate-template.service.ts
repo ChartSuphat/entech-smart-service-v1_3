@@ -15,7 +15,8 @@ import {
   CalculationResults,
   PDFGenerationOptions,
   DEFAULT_PDF_OPTIONS,
-  DEFAULT_COMPANY_INFO
+  DEFAULT_COMPANY_INFO,
+  ProcessedCalZeroData
 } from '../types/certificate-template.types';
 
 export class CertificateTemplateService {
@@ -129,9 +130,9 @@ export class CertificateTemplateService {
 
       // Process calibration data with gasUnit from tool
       const gasUnit = certificate.tool?.gasUnit || 'ppm';
-      const processedCalibrationData = this.processCalibrationData(certificate.calibrationData, gasUnit);
+      const processedCalibrationData = this.padToMinRows(this.processCalibrationData(certificate.calibrationData, gasUnit));
       const processedAdjustedData = certificate.adjustedData && certificate.adjustedData.length > 0 ?
-        this.processCalibrationData(certificate.adjustedData, gasUnit) : [];
+        this.padToMinRows(this.processCalibrationData(certificate.adjustedData, gasUnit)) : [];
 
       // Auto-fill signature paths
       let technicianSignature: string | undefined;
@@ -166,21 +167,24 @@ if (certificate.approvedBy?.signature) {
         } : undefined
       };
 
+      // Process Cal Zero data for Biogas/CEMS certificates
+      const calZeroData = this.processCalZeroData(certificate);
+
       const templateData: CertificateTemplateData = {
         certificate: certificateWithProcessedData as CertificateWithAllRelations,
 
-        // ✅ UPDATE THIS LINE: Use base64 logo
         company: {
           ...this.getCompanyInfo(),
-          logo: logoBase64  // Changed from '/Logo.png' to base64
+          logo: logoBase64
         },
 
-        standardReference: await this.getStandardReference(certificate.calibrationData, certificate.tool),
+        standardReference: this.padToMinRows(await this.getStandardReference(certificate.calibrationData, certificate.tool, certificate)) as StandardReference[],
         ambientConditions: this.processAmbientConditions(certificate.ambientConditions),
         signatures: this.getSignatureData(certificate, technicianSignature, approverSignature),
         calculations: this.getCalculationResults(certificateWithProcessedData),
         isDraft: isDraft,
-        formatType: certificate.formatType || 'official'
+        formatType: certificate.formatType || 'official',
+        calZeroData
       };
 
       return templateData;
@@ -210,6 +214,12 @@ if (certificate.approvedBy?.signature) {
   /**
    * Process calibration data and calculate missing values
    */
+  private padToMinRows<T>(arr: T[], min = 4): (T | { isEmpty: true })[] {
+    const result: (T | { isEmpty: true })[] = [...arr];
+    while (result.length < min) result.push({ isEmpty: true });
+    return result;
+  }
+
   private processCalibrationData(calibrationData: any[], gasUnit: string = 'ppm'): any[] {
     if (!calibrationData || calibrationData.length === 0) {
       return [];
@@ -232,8 +242,8 @@ if (certificate.approvedBy?.signature) {
       return {
         ...data,
         gasUnit: data.gasUnit || gasUnit, // Use row's gasUnit if exists, otherwise use fallback
-        meanValue: Number(meanValue.toFixed(1)),
-        error: Number(error.toFixed(1)),
+        meanValue: Number(meanValue.toFixed(2)),
+        error: Number(error.toFixed(2)),
         repeatability: Number(repeatability.toFixed(1)),
         combinedUncertainty: Number(combinedUncertainty.toFixed(1)),
         expandedUncertainty: Number(expandedUncertainty.toFixed(1))
@@ -298,44 +308,77 @@ if (certificate.approvedBy?.signature) {
   /**
    * ✅ UPDATED: Get standard reference data with tool support
    */
-  private async getStandardReference(calibrationData: any[], tool?: any): Promise<StandardReference[]> {
-    // If we have tool data, use it
+  private async getStandardReference(calibrationData: any[], tool?: any, certificate?: any): Promise<StandardReference[]> {
+    // Build from calibrationData rows (each row has referenceNo, vendor, certDueDate, gasType, standardValue, gasUnit)
+    if (calibrationData && calibrationData.length > 0) {
+      // Group rows by referenceNo so same-tank gases share one entry
+      const seen = new Map<string, StandardReference[]>();
+
+      for (const row of calibrationData) {
+        const refNo = row.referenceNo || tool?.certificateNumber || 'N/A';
+        const vendor = row.vendor || tool?.vendorName || 'N/A';
+        const dueDate = row.certDueDate || (tool?.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A');
+        const gasUnit = row.gasUnit || 'ppm';
+        const standard = `${row.gasType} ${row.standardValue} ${gasUnit}`;
+
+        if (!seen.has(refNo)) seen.set(refNo, []);
+        seen.get(refNo)!.push({
+          standard,
+          gasUnit: '',   // unit already included in standard string
+          referenceNo: refNo,
+          vendor,
+          dueDate
+        });
+      }
+
+      // Flatten: one row per gas (rows already deduplicated by gas name via calibrationData)
+      const refs = Array.from(seen.values()).flat();
+      return this.prependZeroGasRef(refs, certificate);
+    }
+
+    // Fallback: single tool
     if (tool) {
-      const gasUnit = tool?.gasUnit || 'ppm';
-      return [{
-        standard: `${tool.gasName} ${tool.concentration}`,
-        gasUnit: gasUnit,
-        referenceNo: tool.certificateNumber || 'N/A',
-        vendor: tool.vendorName || 'N/A',
-        dueDate: tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: '2-digit'
-        }) : 'N/A'
-      }];
+      const gasUnit = tool.gasUnit || 'ppm';
+      const dueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A';
+      let refs: StandardReference[];
+      if (tool.isMixGas && tool.components?.length) {
+        refs = tool.components.map((c: any) => ({
+          standard: `${c.gasName} ${c.concentration} ${c.gasUnit || gasUnit}`,
+          gasUnit: '',
+          referenceNo: tool.certificateNumber || 'N/A',
+          vendor: tool.vendorName || 'N/A',
+          dueDate
+        }));
+      } else {
+        refs = [{
+          standard: `${tool.gasName} ${tool.concentration} ${gasUnit}`,
+          gasUnit: '',
+          referenceNo: tool.certificateNumber || 'N/A',
+          vendor: tool.vendorName || 'N/A',
+          dueDate
+        }];
+      }
+      return this.prependZeroGasRef(refs, certificate);
     }
 
-    // Fallback to calibration data
-    if (!calibrationData || calibrationData.length === 0) {
-      return [{
-        standard: 'Ammonia (NH3) 50.2 ppm',
-        gasUnit: 'ppm',
-        referenceNo: 'CG-0940-24',
-        vendor: 'NIMT',
-        dueDate: '12-Mar-26'
-      }];
-    }
+    return this.prependZeroGasRef([], certificate);
+  }
 
-    // Get unique gas types from calibration data
-    const uniqueGasTypes = [...new Set(calibrationData.map(d => d.gasType))];
-    
-    return uniqueGasTypes.map(gasType => ({
-      standard: `${gasType} 50.2 ppm`,
-      gasUnit: tool?.gasUnit || 'ppm',
-      referenceNo: 'CG-0940-24',
-      vendor: 'NIMT',
-      dueDate: '12-Mar-26'
-    }));
+  /** Prepend zero gas entry to standard reference list for Biogas/CEMS certificates */
+  private prependZeroGasRef(refs: StandardReference[], certificate?: any): StandardReference[] {
+    if ((certificate?.certType !== 'biogas' && certificate?.certType !== 'cems' && certificate?.certType !== 'biogas_cems') || !certificate?.calZeroData) return refs;
+    const czd = typeof certificate.calZeroData === 'string'
+      ? JSON.parse(certificate.calZeroData)
+      : certificate.calZeroData;
+    if (!czd?.zeroGasName) return refs;
+    const zeroEntry: StandardReference = {
+      standard: czd.zeroGasName,
+      gasUnit: '',
+      referenceNo: czd.zeroReferenceNo || 'N/A',
+      vendor: czd.zeroVendor || 'N/A',
+      dueDate: czd.zeroDueDate || 'N/A'
+    };
+    return [zeroEntry, ...refs];
   }
 
   /**
@@ -357,27 +400,79 @@ if (certificate.approvedBy?.signature) {
   }
 
   /**
+   * Process Cal Zero data for Biogas/CEMS certificates
+   */
+  private processCalZeroData(certificate: any): ProcessedCalZeroData | null {
+    if ((certificate.certType !== 'biogas' && certificate.certType !== 'cems' && certificate.certType !== 'biogas_cems') || !certificate.calZeroData) return null;
+
+    const czd = typeof certificate.calZeroData === 'string'
+      ? JSON.parse(certificate.calZeroData)
+      : certificate.calZeroData;
+
+    const beforeRows = this.processCalibrationData(czd.beforeRows || [], 'ppm');
+    const afterRows = czd.afterRows?.length > 0
+      ? this.processCalibrationData(czd.afterRows, 'ppm')
+      : [];
+
+    return {
+      zeroGasName: czd.zeroGasName || 'N/A',
+      zeroReferenceNo: czd.zeroReferenceNo || 'N/A',
+      zeroVendor: czd.zeroVendor || 'N/A',
+      zeroDueDate: czd.zeroDueDate || 'N/A',
+      standardRef: [{
+        standard: czd.zeroGasName || 'N/A',
+        gasUnit: '',
+        referenceNo: czd.zeroReferenceNo || 'N/A',
+        vendor: czd.zeroVendor || 'N/A',
+        dueDate: czd.zeroDueDate || 'N/A'
+      }],
+      beforeRows,
+      afterRows,
+      hasAfterRows: afterRows.length > 0
+    };
+  }
+
+  /**
    * Get calculation results and metadata
    */
   private getCalculationResults(certificate: any): CalculationResults {
-    // Build parameter string using tool data directly (not calibrationData rows)
     let parameterOfCalibration = 'Gas Calibration';
 
-    console.log('🔥 getCalculationResults - Has tool?', !!certificate.tool);
-    if (certificate.tool) {
-      console.log('🔥 Tool data:', JSON.stringify(certificate.tool));
+    const resolveUnit = (unit: string | null | undefined): string =>
+      unit && unit !== 'N/A' && unit.trim() !== '' ? unit.trim() : 'ppm';
+
+    const parts: string[] = [];
+
+    // 1) Zero gas from calZeroData (if this is biogas/cems cert)
+    const czd = certificate.calZeroData
+      ? (typeof certificate.calZeroData === 'string' ? JSON.parse(certificate.calZeroData) : certificate.calZeroData)
+      : null;
+    if (czd?.zeroGasName) {
+      parts.push(czd.zeroGasName);
     }
 
-    // Always use tool data for Parameter of Calibration
-    if (certificate.tool) {
-      const gasType = certificate.tool.gasName || 'Unknown';
-      const concentration = certificate.tool.concentration || 0;
-      const unit = certificate.tool.gasUnit || 'ppm';
-      console.log(`🔥 Building: gasType="${gasType}", concentration=${concentration}, unit="${unit}"`);
-      parameterOfCalibration = `Gas Calibration ${gasType} ${concentration} ${unit}`;
-      console.log(`🔥 FINAL: "${parameterOfCalibration}"`);
-    } else {
-      console.log('🔥 NO TOOL FOUND - using default');
+    // 2) Calibration gases from calibrationData rows
+    if (certificate.calibrationData && certificate.calibrationData.length > 0) {
+      for (const row of certificate.calibrationData) {
+        const gasType = row.gasType && row.gasType !== 'Unknown' ? row.gasType : null;
+        const stdVal  = row.standardValue != null ? row.standardValue : '';
+        const unit    = resolveUnit(row.gasUnit);
+        if (gasType) parts.push(`${gasType} ${stdVal} ${unit}`.trim());
+      }
+    } else if (certificate.tool) {
+      // Fallback for old certs with no calibrationData rows
+      const gasType = certificate.tool.gasName;
+      const unit    = resolveUnit(certificate.tool.gasUnit);
+      parts.push(`${gasType} ${certificate.tool.concentration} ${unit}`);
+    }
+
+    if (parts.length > 0) {
+      // 2 entries per line
+      const lines: string[] = [];
+      for (let i = 0; i < parts.length; i += 2) {
+        lines.push(parts.slice(i, i + 2).join(', '));
+      }
+      parameterOfCalibration = `Gas Calibration ${lines.join(',\n')}`;
     }
 
     const receivingNo = certificate.receivingNo || certificate.customer?.customerId || certificate.id.toString();
@@ -605,3 +700,7 @@ private registerHandlebarsHelpers(): void {
     }
   }
 }
+
+
+
+

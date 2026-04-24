@@ -11,6 +11,10 @@ const AmbientConditionsSchema = z.object({
 
 const CalibrationDataSchema = z.object({
   gasType: z.string().min(1, "Gas type is required"),
+  gasUnit: z.string().optional(),
+  referenceNo: z.string().optional(),
+  vendor: z.string().optional(),
+  certDueDate: z.string().optional(),
   standardValue: z.number().positive("Standard value must be positive"),
   measurement1: z.number().min(0, "Measurement 1 cannot be negative"),
   measurement2: z.number().min(0, "Measurement 2 cannot be negative"),
@@ -49,7 +53,9 @@ export const CreateCertificateSchema = z.object({
   calibrationData: z.array(CalibrationDataSchema).optional(),
   adjustedData: z.array(CalibrationDataSchema).optional(),
   remarks: z.string().optional(),
-  
+  certType: z.string().optional(),
+  calZeroData: z.any().optional(),
+
   // ✅ FIXED: Change toolId preprocessing to return undefined instead of null
   toolId: z.preprocess((val) => {
     if (val === null || val === undefined || val === '' || val === 0) return undefined;

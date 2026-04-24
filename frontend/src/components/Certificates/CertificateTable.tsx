@@ -16,6 +16,7 @@ interface Certificate {
   id: number;
   certificateNo: string;
   formatType?: 'draft' | 'official';
+  certType?: 'gas' | 'biogas' | 'cems' | 'biogas_cems';
   status: 'pending' | 'approved';
   dateOfCalibration: string;
   dateOfIssue: string;
@@ -53,7 +54,7 @@ interface Certificate {
   createdById: number;
 }
 
-type SortField = 'certificateNo' | 'formatType' | 'customer' | 'technician' | 'status' | 'date'; 
+type SortField = 'certificateNo' | 'formatType' | 'certType' | 'customer' | 'technician' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -355,6 +356,7 @@ const CertificateTable: React.FC<CertificateTableProps> = ({
               <SortableHeader field="certificateNo" className="min-w-[100px]">Cert No.</SortableHeader>
               <th className="px-2 py-2 text-left text-xs font-semibold text-white uppercase min-w-[150px]">Equipment</th>
               <SortableHeader field="formatType" className="min-w-[80px]">Format</SortableHeader>
+              <SortableHeader field="certType" className="min-w-[90px]">Type</SortableHeader>
               <SortableHeader field="customer" className="min-w-[120px]">Customer</SortableHeader>
               <SortableHeader field="technician" className="min-w-[100px]">Tech</SortableHeader>
               {canModify && <SortableHeader field="status" className="min-w-[80px]">Status</SortableHeader>}
@@ -391,12 +393,25 @@ const CertificateTable: React.FC<CertificateTableProps> = ({
                 </td>
                 <td className="px-2 py-2 min-w-[80px]">
                   <span className={`px-2 py-1 text-xs font-medium rounded ${
-                  certificate.formatType === 'draft' 
-                  ? 'bg-yellow-100 text-gray-800' 
+                  certificate.formatType === 'draft'
+                  ? 'bg-yellow-100 text-gray-800'
                   : 'bg-green-100 text-gray-800'
                   }`}>
                   {certificate.formatType === 'draft' ? 'Draft' : 'Official'}
                 </span>
+                </td>
+                <td className="px-2 py-2 min-w-[90px]">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${
+                    certificate.certType === 'cems'
+                    ? 'bg-orange-100 text-orange-800'
+                    : certificate.certType === 'biogas' || certificate.certType === 'biogas_cems'
+                    ? 'bg-teal-100 text-teal-800'
+                    : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {certificate.certType === 'cems' ? 'CEMs'
+                      : certificate.certType === 'biogas' || certificate.certType === 'biogas_cems' ? 'Biogas'
+                      : 'Gas'}
+                  </span>
                 </td>
                 <td className="px-2 py-2 min-w-[120px]">
                   <div className="text-xs text-gray-900 truncate">{certificate.customer?.companyName || 'N/A'}</div>

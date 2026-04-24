@@ -50,86 +50,87 @@ export const createTool = async (req: Request, res: Response) => {
     uncertaintyPercent,
     uncertaintyStandard,
     dueDate,
-    certFile,      // ✅ Accept both formats
-    toolImage,     // ✅ Accept both formats
-    certFileUrl,   // ✅ New format from frontend
-    toolImageUrl   // ✅ New format from frontend
+    certFile,
+    toolImage,
+    certFileUrl,
+    toolImageUrl,
+    isMixGas,
+    components   // [{gasName, gasUnit, concentration, uncertaintyPercent, uncertaintyStandard?}]
   } = req.body;
 
   try {
-    // Validate required fields
-    if (!certificateNumber || !gasName || !vendorName) {
-      return res.status(400).json({ 
+    if (!certificateNumber || !vendorName) {
+      return res.status(400).json({
         success: false,
-        message: 'Missing required fields: certificateNumber, gasName, vendorName' 
+        message: 'Missing required fields: certificateNumber, vendorName'
       });
     }
 
-    // Calculate uncertaintyStandard if not provided
-    const calculatedUncertaintyStandard = uncertaintyStandard || 
+    if (isMixGas) {
+      if (!Array.isArray(components) || components.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mixed gas tool requires at least 2 components'
+        });
+      }
+    } else {
+      if (!gasName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required field: gasName'
+        });
+      }
+    }
+
+    const calculatedUncertaintyStandard = uncertaintyStandard ||
       ((concentration || 0) * (uncertaintyPercent || 0)) / 100;
 
-    // ✅ CRITICAL: Use the URL fields, fallback to old format for compatibility
     const finalCertFile = certFileUrl || certFile || null;
     const finalToolImage = toolImageUrl || toolImage || null;
-
-    console.log('📝 Creating tool with files:', {
-      certFileUrl,
-      toolImageUrl,
-      finalCertFile,
-      finalToolImage
-    });
 
     const newTool = await prisma.toolsManagement.create({
       data: {
         certificateNumber,
-        gasName,
-        gasUnit: gasUnit || 'ppm',
+        gasName: isMixGas ? 'Mixed Gas' : gasName,
+        gasUnit: isMixGas ? 'N/A' : (gasUnit || 'ppm'),
         vendorName,
-        concentration: concentration || 0,
-        uncertaintyPercent: uncertaintyPercent || 0,
-        uncertaintyStandard: calculatedUncertaintyStandard,
+        concentration: isMixGas ? 0 : (concentration || 0),
+        uncertaintyPercent: isMixGas ? 0 : (uncertaintyPercent || 0),
+        uncertaintyStandard: isMixGas ? 0 : calculatedUncertaintyStandard,
         dueDate: dueDate ? new Date(dueDate) : new Date(),
-        certFile: finalCertFile,     // ✅ Save full URL
-        toolImage: finalToolImage    // ✅ Save full URL
-      }
+        isMixGas: isMixGas || false,
+        certFile: finalCertFile,
+        toolImage: finalToolImage,
+        ...(isMixGas && components ? {
+          components: {
+            create: components.map((c: any) => ({
+              gasName: c.gasName,
+              gasUnit: c.gasUnit || 'ppm',
+              concentration: c.concentration || 0,
+              uncertaintyPercent: c.uncertaintyPercent || 0,
+              uncertaintyStandard: c.uncertaintyStandard ?? ((c.concentration || 0) * (c.uncertaintyPercent || 0)) / 100
+            }))
+          }
+        } : {})
+      },
+      include: { components: true }
     });
 
     res.status(201).json({
       success: true,
       message: 'Tool created successfully',
-      data: {
-        id: newTool.id,
-        certificateNumber: newTool.certificateNumber,
-        gasName: newTool.gasName,
-        gasUnit: newTool.gasUnit,
-        vendorName: newTool.vendorName,
-        concentration: newTool.concentration,
-        uncertaintyPercent: newTool.uncertaintyPercent,
-        uncertaintyStandard: newTool.uncertaintyStandard || 0,
-        dueDate: newTool.dueDate.toISOString(),
-        certFile: newTool.certFile,
-        toolImage: newTool.toolImage,
-        createdAt: newTool.createdAt.toISOString(),
-        updatedAt: newTool.updatedAt.toISOString()
-      }
+      data: { ...newTool, dueDate: newTool.dueDate.toISOString(), createdAt: newTool.createdAt.toISOString(), updatedAt: newTool.updatedAt.toISOString() }
     });
 
   } catch (error: any) {
     console.error('Error creating tool:', error);
-    
     if (error.code === 'P2002') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Tool with this certificate number already exists' 
+        message: 'Tool with this certificate number already exists'
       });
     }
-    
-    res.status(500).json({ 
-      success: false,
-      message: 'Failed to create tool', 
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: 'Failed to create tool', error: error.message });
   }
 };
 
@@ -137,9 +138,8 @@ export const createTool = async (req: Request, res: Response) => {
 export const getTools = async (req: Request, res: Response) => {
   try {
     const tools = await prisma.toolsManagement.findMany({
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: { createdAt: 'desc' },
+      include: { components: true }
     });
 
     const formattedTools = tools.map(tool => ({
@@ -152,8 +152,11 @@ export const getTools = async (req: Request, res: Response) => {
       uncertaintyPercent: tool.uncertaintyPercent,
       uncertaintyStandard: tool.uncertaintyStandard || 0,
       dueDate: tool.dueDate.toISOString(),
-      certFile: tool.certFile,     // ✅ Should now be full URL like "/uploads/filename.pdf"
-      toolImage: tool.toolImage,   // ✅ Should now be full URL like "/uploads/filename.png"
+      isBlocked: tool.isBlocked,
+      isMixGas: tool.isMixGas,
+      components: tool.components,
+      certFile: tool.certFile,
+      toolImage: tool.toolImage,
       createdAt: tool.createdAt.toISOString(),
       updatedAt: tool.updatedAt.toISOString()
     }));
@@ -185,32 +188,19 @@ export const getToolById = async (req: Request, res: Response) => {
 
   try {
     const tool = await prisma.toolsManagement.findUnique({
-      where: {
-        id: parseInt(id)
-      }
+      where: { id: parseInt(id) },
+      include: { components: true }
     });
 
     if (!tool) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Tool not found' 
-      });
+      return res.status(404).json({ success: false, message: 'Tool not found' });
     }
 
     res.json({
       success: true,
       data: {
-        id: tool.id,
-        certificateNumber: tool.certificateNumber,
-        gasName: tool.gasName,
-        gasUnit: tool.gasUnit,
-        vendorName: tool.vendorName,
-        concentration: tool.concentration,
-        uncertaintyPercent: tool.uncertaintyPercent,
-        uncertaintyStandard: tool.uncertaintyStandard || 0,
+        ...tool,
         dueDate: tool.dueDate.toISOString(),
-        certFile: tool.certFile,
-        toolImage: tool.toolImage,
         createdAt: tool.createdAt.toISOString(),
         updatedAt: tool.updatedAt.toISOString()
       }
@@ -256,6 +246,7 @@ export const updateTool = async (req: Request, res: Response) => {
       });
     }
 
+    const { isMixGas, components } = req.body;
     const updateData: any = {};
 
     if (certificateNumber !== undefined) updateData.certificateNumber = certificateNumber;
@@ -265,6 +256,7 @@ export const updateTool = async (req: Request, res: Response) => {
     if (concentration !== undefined) updateData.concentration = concentration;
     if (uncertaintyPercent !== undefined) updateData.uncertaintyPercent = uncertaintyPercent;
     if (dueDate !== undefined) updateData.dueDate = new Date(dueDate);
+    if (isMixGas !== undefined) updateData.isMixGas = isMixGas;
     
     // ✅ CRITICAL: Handle file updates with old file deletion
     const finalCertFile = certFileUrl || certFile;
@@ -311,28 +303,39 @@ export const updateTool = async (req: Request, res: Response) => {
       updateData.uncertaintyStandard = uncertaintyStandard;
     }
 
-    const updatedTool = await prisma.toolsManagement.update({
+    await prisma.toolsManagement.update({
       where: { id: parseInt(id) },
       data: updateData
+    });
+
+    // Replace components if mix gas and components provided
+    if (isMixGas && Array.isArray(components)) {
+      await prisma.mixGasComponent.deleteMany({ where: { toolId: parseInt(id) } });
+      await prisma.mixGasComponent.createMany({
+        data: components.map((c: any) => ({
+          toolId: parseInt(id),
+          gasName: c.gasName,
+          gasUnit: c.gasUnit || 'ppm',
+          concentration: c.concentration || 0,
+          uncertaintyPercent: c.uncertaintyPercent || 0,
+          uncertaintyStandard: c.uncertaintyStandard ?? ((c.concentration || 0) * (c.uncertaintyPercent || 0)) / 100
+        }))
+      });
+    }
+
+    const updatedTool = await prisma.toolsManagement.findUnique({
+      where: { id: parseInt(id) },
+      include: { components: true }
     });
 
     res.json({
       success: true,
       message: 'Tool updated successfully',
       data: {
-        id: updatedTool.id,
-        certificateNumber: updatedTool.certificateNumber,
-        gasName: updatedTool.gasName,
-        gasUnit: updatedTool.gasUnit,
-        vendorName: updatedTool.vendorName,
-        concentration: updatedTool.concentration,
-        uncertaintyPercent: updatedTool.uncertaintyPercent,
-        uncertaintyStandard: updatedTool.uncertaintyStandard || 0,
-        dueDate: updatedTool.dueDate.toISOString(),
-        certFile: updatedTool.certFile,
-        toolImage: updatedTool.toolImage,
-        createdAt: updatedTool.createdAt.toISOString(),
-        updatedAt: updatedTool.updatedAt.toISOString()
+        ...updatedTool,
+        dueDate: updatedTool!.dueDate.toISOString(),
+        createdAt: updatedTool!.createdAt.toISOString(),
+        updatedAt: updatedTool!.updatedAt.toISOString()
       }
     });
 
@@ -406,10 +409,35 @@ export const deleteTool = async (req: Request, res: Response) => {
       });
     }
     
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Failed to delete tool', 
-      error: error.message 
+      message: 'Failed to delete tool',
+      error: error.message
     });
+  }
+};
+
+/////// Toggle Block Tool (admin only) ///////
+export const toggleBlockTool = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const tool = await prisma.toolsManagement.findUnique({ where: { id: parseInt(id) } });
+    if (!tool) {
+      return res.status(404).json({ success: false, message: 'Tool not found' });
+    }
+
+    const updated = await prisma.toolsManagement.update({
+      where: { id: parseInt(id) },
+      data: { isBlocked: !tool.isBlocked }
+    });
+
+    res.json({
+      success: true,
+      message: updated.isBlocked ? 'Tool blocked successfully' : 'Tool unblocked successfully',
+      data: { id: updated.id, isBlocked: updated.isBlocked }
+    });
+  } catch (error: any) {
+    console.error('Error toggling tool block:', error);
+    res.status(500).json({ success: false, message: 'Failed to update tool', error: error.message });
   }
 };

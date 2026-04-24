@@ -163,7 +163,7 @@ const UncertaintyBudgetTable: React.FC<UncertaintyBudgetTableProps> = ({
                   const ratio = ucPower4 / (uRepPower4 / 2);
                   
                   // If ratio > 500, show ">500", otherwise show the actual value
-                  return ratio > 500 
+                  return ratio > 100 
                     ? ">500" 
                     : ratio.toFixed(0);
                 })()}

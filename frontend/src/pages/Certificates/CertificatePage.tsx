@@ -9,6 +9,7 @@ interface Certificate {
   id: number;
   certificateNo: string;
   formatType?: 'draft' | 'official';
+  certType?: 'gas' | 'biogas' | 'cems' | 'biogas_cems';
   status: 'pending' | 'approved';
   dateOfCalibration: string;
   dateOfIssue: string;
@@ -46,7 +47,7 @@ interface Certificate {
   createdById: number;
 }
 
-type SortField = 'certificateNo' | 'formatType' | 'customer' | 'technician' | 'status' | 'date';
+type SortField = 'certificateNo' | 'formatType' | 'certType' | 'customer' | 'technician' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -159,6 +160,7 @@ const CertificatePage: React.FC = () => {
       switch (config.field) {
         case 'certificateNo': [aValue, bValue] = [a.certificateNo || '', b.certificateNo || '']; break;
         case 'formatType':  [aValue, bValue] = [a.formatType || 'official', b.formatType || 'official']; break;
+        case 'certType':    [aValue, bValue] = [a.certType || 'gas', b.certType || 'gas']; break;
         case 'customer': [aValue, bValue] = [a.customer?.companyName || '', b.customer?.companyName || '']; break;
         case 'technician': [aValue, bValue] = [a.technicianName || '', b.technicianName || '']; break;
         case 'status': [aValue, bValue] = [a.status || '', b.status || '']; break;

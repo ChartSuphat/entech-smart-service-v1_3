@@ -7,9 +7,20 @@ export interface CertificateTemplateData {
   ambientConditions: ProcessedAmbientConditions;
   signatures: SignatureData;
   calculations: CalculationResults;
-  // ✅ ADD THESE TWO LINES:
   isDraft: boolean;
   formatType: 'draft' | 'official';
+  calZeroData?: ProcessedCalZeroData | null;
+}
+
+export interface ProcessedCalZeroData {
+  zeroGasName: string;
+  zeroReferenceNo: string;
+  zeroVendor: string;
+  zeroDueDate: string;
+  standardRef: StandardReference[];
+  beforeRows: any[];
+  afterRows: any[];
+  hasAfterRows: boolean;
 }
 
 export interface CertificateWithAllRelations {
@@ -30,8 +41,10 @@ export interface CertificateWithAllRelations {
   createdAt: Date;
   updatedAt: Date;
   hasWatermark: boolean;
+  certType?: string;
+  calZeroData?: any;
+  remarks?: string;
 
-  
   // Relations
   equipment: EquipmentInfo;
   probe: ProbeInfo;
@@ -126,11 +139,12 @@ export interface CompanyInfo {
 }
 
 export interface StandardReference {
-  standard: string;
-  gasUnit: string
-  referenceNo: string;
-  vendor: string;
-  dueDate: string;
+  standard?: string;
+  gasUnit?: string;
+  referenceNo?: string;
+  vendor?: string;
+  dueDate?: string;
+  isEmpty?: boolean;
 }
 
 // Updated ambient conditions interface - REMOVED PRESSURE

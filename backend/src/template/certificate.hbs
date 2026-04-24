@@ -210,6 +210,7 @@
             padding-left: 8px;
         }
 
+
         .signature-section {
             display: flex;
             justify-content: space-between;
@@ -394,7 +395,7 @@
                 <tr>
                     <td>Parameter of Calibration</td>
                     <td>:</td>
-                    <td>{{calculations.parameterOfCalibration}}</td>
+                    <td style="white-space: pre-line;">{{calculations.parameterOfCalibration}}</td>
                 </tr>
                 <tr>
                     <td>Condition of UUC</td>
@@ -539,15 +540,16 @@
                 <tbody>
                     {{#each standardReference}}
                         <tr>
-                            <td class="text-left">{{standard}} {{gasUnit}}</td>
-                            <td>{{referenceNo}}</td>
-                            <td>{{vendor}}</td>
-                            <td>{{dueDate}}</td>
+                            {{#if isEmpty}}
+                                <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                            {{else}}
+                                <td class="text-left">{{standard}}</td>
+                                <td>{{referenceNo}}</td>
+                                <td>{{vendor}}</td>
+                                <td>{{dueDate}}</td>
+                            {{/if}}
                         </tr>
                     {{/each}}
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
                 </tbody>
             </table>
         </div>
@@ -585,17 +587,17 @@
                 <tbody>
                     {{#each certificate.calibrationData}}
                         <tr>
-                            <td class="text-left">{{gasWithValueUnit this}}</td>
-                            <td>{{formatNumber standardValue 1}}</td>
-                            <td>{{formatNumber meanValue 1}}</td>
-                            <td>{{formatNumber error 1}}</td>
-                            <td>{{formatNumber expandedUncertainty 2}}</td>
+                            {{#if isEmpty}}
+                                <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                            {{else}}
+                                <td class="text-left">{{gasWithValueUnit this}}</td>
+                                <td>{{formatNumber standardValue 2}}</td>
+                                <td>{{formatNumber meanValue 2}}</td>
+                                <td>{{formatNumber error 2}}</td>
+                                <td>{{formatNumber expandedUncertainty 2}}</td>
+                            {{/if}}
                         </tr>
                     {{/each}}
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
                 </tbody>
             </table>
         </div>
@@ -616,17 +618,17 @@
                 <tbody>
                     {{#each certificate.adjustedData}}
                         <tr>
-                            <td class="text-left">{{gasWithValueUnit this}}</td>
-                            <td>{{formatNumber standardValue 1}}</td>
-                            <td>{{formatNumber meanValue 1}}</td>
-                            <td>{{formatNumber error 1}}</td>
-                            <td>{{formatNumber expandedUncertainty 2}}</td>
+                            {{#if isEmpty}}
+                                <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                            {{else}}
+                                <td class="text-left">{{gasWithValueUnit this}}</td>
+                                <td>{{formatNumber standardValue 2}}</td>
+                                <td>{{formatNumber meanValue 2}}</td>
+                                <td>{{formatNumber error 2}}</td>
+                                <td>{{formatNumber expandedUncertainty 2}}</td>
+                            {{/if}}
                         </tr>
                     {{/each}}
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-                    <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
                 </tbody>
             </table>
         </div>
@@ -662,5 +664,152 @@
             <div>Tax ID :0105565020602 www.entechsi.com</div>
         </div>
     </div>
+
+    {{!-- Cal Zero page removed: data is stored in DB and viewable in the edit modal --}}
+    {{#if false}}
+    <div class="certificate-page page-break">
+        {{#ifTrue isDraft}}
+            <div class="draft-watermark">DRAFT</div>
+        {{/ifTrue}}
+
+        <div class="header">
+            <div>
+                {{#if company.logo}}
+                    <img src="{{company.logo}}" alt="ENTECH SI" class="logo">
+                {{else}}
+                    <div class="logo-fallback">
+                        <span class="logo-entech">ENTECH</span>
+                        <span class="logo-si">SI</span>
+                    </div>
+                {{/if}}
+            </div>
+            <div class="header-title">
+                <h1>Calibration Certificate</h1>
+            </div>
+        </div>
+
+        <div class="certificate-info-section" style="padding-right: 30px;">
+            <div><strong>Certificate No.:</strong> {{certificate.certificateNo}}</div>
+            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "DD-MMM-YY"}}</div>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Cal Zero — Standard Reference (Table 1)</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Standard</th>
+                        <th>Reference No.</th>
+                        <th>Vendor</th>
+                        <th>Due date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each calZeroData.standardRef}}
+                        <tr>
+                            <td class="text-left">{{standard}}</td>
+                            <td>{{referenceNo}}</td>
+                            <td>{{vendor}}</td>
+                            <td>{{dueDate}}</td>
+                        </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Measured room conditions</h4>
+            <div style="font-size: 10px; margin-bottom: 10px;">
+                <span style="margin-right: 20px;">Temperature: {{formatNumber certificate.ambientConditions.temperature 1}} °C</span>
+                <span style="margin-right: 20px;">Humidity: {{formatNumber certificate.ambientConditions.humidity 1}} %RH</span>
+                <span>Pressure: {{formatNumber certificate.ambientConditions.pressure 1}} mbar</span>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Calibration conditions</h4>
+            <div style="font-size: 10px; margin-bottom: 10px;">
+                <span style="margin-right: 20px;">Gas Temperature: {{formatNumber certificate.ambientConditions.gasTemperature 1}} °C</span>
+                <span style="margin-right: 20px;">Flow rate: {{formatNumber certificate.ambientConditions.flowRate 0}} mL/min</span>
+                <span>Gas pressure: {{formatNumber certificate.ambientConditions.gasPressure 1}} mbar</span>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Calibration Results — Cal Zero (Before Adjustment) (Table 2)</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Parameter of Standard</th>
+                        <th>Standard Values</th>
+                        <th>Mean of UUC</th>
+                        <th>Error</th>
+                        <th>±Uncertainty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each calZeroData.beforeRows}}
+                        <tr>
+                            <td class="text-left">{{gasWithValueUnit this}}</td>
+                            <td>{{formatNumber standardValue 2}}</td>
+                            <td>{{formatNumber meanValue 2}}</td>
+                            <td>{{formatNumber error 2}}</td>
+                            <td>{{formatNumber expandedUncertainty 2}}</td>
+                        </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        {{#if calZeroData.hasAfterRows}}
+        <div class="info-section">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Calibration Results — Cal Zero (After Adjustment) (Table 3)</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Parameter of Standard</th>
+                        <th>Standard Values</th>
+                        <th>Mean of UUC</th>
+                        <th>Error</th>
+                        <th>±Uncertainty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each calZeroData.afterRows}}
+                        <tr>
+                            <td class="text-left">{{gasWithValueUnit this}}</td>
+                            <td>{{formatNumber standardValue 2}}</td>
+                            <td>{{formatNumber meanValue 2}}</td>
+                            <td>{{formatNumber error 2}}</td>
+                            <td>{{formatNumber expandedUncertainty 2}}</td>
+                        </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+
+        <div style="text-align: center; font-size: 14px; font-weight: bold; margin: 40px 0 20px 0;">
+            End of report
+        </div>
+
+        <div style="position: absolute; bottom: 16mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
+            <div>FM-CL-09-C Rev.8</div>
+            <div>Page 3 of {{calculations.totalPages}}</div>
+            <div>Issued Date {{formatDate certificate.dateOfIssue "DD/MM/YY"}}</div>
+        </div>
+
+        <div style="position: absolute; bottom: 12.5mm; left: 10mm; right: 10mm; text-align: left; font-size: 9px; font-weight: bold;">
+            ENTECH SI CO.,LTD.
+        </div>
+
+        <div style="position: absolute; bottom: 11mm; left: 10mm; right: 10mm; border-bottom: 1px solid #000;"></div>
+
+        <div style="position: absolute; bottom: 2mm; left: 10mm; right: 10mm; text-align: center; font-size: 10px; line-height: 1.2;">
+            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.0-2779-8855 info@entechsi.com</div>
+            <div>Tax ID :0105565020602 www.entechsi.com</div>
+        </div>
+    </div>
+    {{/if}}
 </body>
 </html>

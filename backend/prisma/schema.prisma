@@ -73,6 +73,8 @@ model Certificate {
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
   hasWatermark        Boolean                  @default(false)
+  certType            String?                  @default("gas")
+  calZeroData         Json?
   adjustedData        AdjustedCalibrationData[]
   calibrationData     CalibrationData[]
   approvedBy          User?                     @relation("ApprovedCertificates", fields: [approvedById], references: [id])
@@ -95,6 +97,9 @@ model CalibrationData {
   certificateId       Int
   gasType             String
   gasUnit             String      @default("ppm")
+  referenceNo         String?
+  vendor              String?
+  certDueDate         String?
   standardValue       Float
   measurement1        Float
   measurement2        Float
@@ -118,7 +123,10 @@ model AdjustedCalibrationData {
   id                  Int         @id @default(autoincrement())
   certificateId       Int
   gasType             String
-  gasUnit             String      @default("ppm") 
+  gasUnit             String      @default("ppm")
+  referenceNo         String?
+  vendor              String?
+  certDueDate         String?
   standardValue       Float
   measurement1        Float
   measurement2        Float
@@ -139,24 +147,42 @@ model AdjustedCalibrationData {
 }
 
 model ToolsManagement {
-  id                  Int           @id @default(autoincrement())
-  certificateNumber   String        @unique
+  id                  Int               @id @default(autoincrement())
+  certificateNumber   String            @unique
   gasName             String
-  gasUnit             String        @default("ppm")
+  gasUnit             String            @default("ppm")
   vendorName          String
-  concentration       Float         @default(0)
-  uncertaintyPercent  Float         @default(0)
+  concentration       Float             @default(0)
+  uncertaintyPercent  Float             @default(0)
   uncertaintyStandard Float?
   dueDate             DateTime
+  isBlocked           Boolean           @default(false)
+  isMixGas            Boolean           @default(false)
   certFile            String?
   toolImage           String?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   certificates        Certificate[]
+  components          MixGasComponent[]
 
   @@index([certificateNumber])
   @@index([dueDate])
   @@map("tools_management")
+}
+
+model MixGasComponent {
+  id                  Int             @id @default(autoincrement())
+  toolId              Int
+  tool                ToolsManagement @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  gasName             String
+  gasUnit             String          @default("ppm")
+  concentration       Float
+  uncertaintyPercent  Float           @default(0)
+  uncertaintyStandard Float?
+  createdAt           DateTime        @default(now())
+
+  @@index([toolId])
+  @@map("mix_gas_components")
 }
 
 model GasCylinderManagement {

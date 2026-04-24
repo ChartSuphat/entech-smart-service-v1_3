@@ -21,6 +21,9 @@ export interface AmbientConditions {
 export interface CalibrationDataInput {
   gasType: string;
   gasUnit: string;
+  referenceNo?: string;
+  vendor?: string;
+  certDueDate?: string;
   standardValue: number;
   measurement1: number;
   measurement2: number;
@@ -87,6 +90,8 @@ export interface CreateCertificateData {
   adjustedData?: any[];
   remarks?: string;
   toolId?: number;
+  certType?: string;
+  calZeroData?: any;
   createdById: number;
 }
 
@@ -109,6 +114,8 @@ export interface UpdateCertificateData {
   adjustedData?: any[];
   remarks?: string;
   toolId?: number;
+  certType?: string;
+  calZeroData?: any;
 }
 
 // =============================================

@@ -3,6 +3,7 @@ import { FaRegEdit } from "react-icons/fa";
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { ImFilePicture } from 'react-icons/im';
 import { BiSolidUpArrow, BiSolidDownArrow } from 'react-icons/bi';
+import Modal from 'react-modal';
 
 // Format date function
 const formatDate = (dateString: string) => {
@@ -38,6 +39,7 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortKey, setSortKey] = useState<'gasName' | 'certificateNumber' | 'vendorName' | null>(null);
   const [sortAsc, setSortAsc] = useState(true);
+  const [mixGasDetail, setMixGasDetail] = useState<Tool | null>(null);
 
   // Add debugging and safety check
   console.log('ToolTable received tools:', tools, 'Type:', typeof tools, 'IsArray:', Array.isArray(tools));
@@ -195,7 +197,8 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
           <tbody>
             {sorted.map((tool, index) => {
               const isExpired = new Date(tool.dueDate) < today;
-              const statusColor = isExpired ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700';
+              const isBlocked = tool.isBlocked === true;
+              const statusColor = isBlocked ? 'bg-gray-200 text-gray-600' : isExpired ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700';
               const ucc = ((tool.concentration * tool.uncertaintyPercent) / 100).toFixed(3);
 
               // Alternating row colors
@@ -204,13 +207,21 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
               return (
                 <tr key={tool.id} className={`border-b hover:bg-blue-50 ${rowBgColor}`}>
                   <td className="px-4 py-3 border-r border-gray-200">{tool.certificateNumber}</td>
-                  <td className="px-4 py-3 border-r border-gray-200">{tool.gasName}</td>
+                  <td className="px-4 py-3 border-r border-gray-200">
+                    {tool.isMixGas ? (
+                      <button
+                        onClick={() => setMixGasDetail(tool)}
+                        className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium hover:bg-purple-200 cursor-pointer"
+                        title="Click to view components"
+                      >Mixed Gas</button>
+                    ) : tool.gasName}
+                  </td>
                   <td className="px-4 py-3 border-r border-gray-200">{tool.vendorName}</td>
-                  <td className="px-4 py-3 border-r border-gray-200">{Number(tool.concentration).toFixed(3)}</td>
-                  <td className="px-4 py-3 border-r border-gray-200">{tool.gasUnit || 'ppm'}</td>
-                  <td className="px-4 py-3 border-r border-gray-200">{tool.uncertaintyPercent}</td>
+                  <td className="px-4 py-3 border-r border-gray-200">{tool.isMixGas ? '-' : Number(tool.concentration).toFixed(3)}</td>
+                  <td className="px-4 py-3 border-r border-gray-200">{tool.isMixGas ? '-' : (tool.gasUnit || 'ppm')}</td>
+                  <td className="px-4 py-3 border-r border-gray-200">{tool.isMixGas ? '-' : tool.uncertaintyPercent}</td>
                   <td className="px-4 py-3 cursor-help text-blue-700 border-r border-gray-200" title="(Concentration × %Uncertainty) / 100">
-                    {ucc}
+                    {tool.isMixGas ? '-' : ucc}
                   </td>
                   <td className="px-4 py-3 border-r border-gray-200">{formatDate(tool.dueDate)}</td>
                   
@@ -246,7 +257,7 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
                   
                   <td className="px-4 py-3 text-center border-r border-gray-200">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor}`}>
-                      {isExpired ? 'Expired' : 'Valid'}
+                      {isBlocked ? 'Blocked' : isExpired ? 'Expired' : 'Valid'}
                     </span>
                   </td>
                   
@@ -275,6 +286,57 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
           </div>
         )}
       </div>
+
+      {/* Mixed Gas Detail Modal */}
+      <Modal
+        isOpen={!!mixGasDetail}
+        onRequestClose={() => setMixGasDetail(null)}
+        ariaHideApp={false}
+        className="bg-white rounded-lg shadow-lg p-6 w-[560px] mx-auto mt-24"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start"
+      >
+        {mixGasDetail && (
+          <>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Mixed Gas Components</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Cert No. {mixGasDetail.certificateNumber} — {mixGasDetail.vendorName}</p>
+              </div>
+              <button onClick={() => setMixGasDetail(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <table className="w-full text-sm border border-gray-200 rounded-md overflow-hidden">
+              <thead className="bg-purple-50">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-gray-600">Gas Name</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-600">Unit</th>
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">Concentration</th>
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">Uncertainty %</th>
+                  <th className="px-3 py-2 text-right font-medium text-gray-600">Uct. of Std</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(mixGasDetail.components || []).map((c: any, i: number) => (
+                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-3 py-2 font-medium">{c.gasName}</td>
+                    <td className="px-3 py-2 text-gray-600">{c.gasUnit}</td>
+                    <td className="px-3 py-2 text-right font-mono">{Number(c.concentration).toFixed(3)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{c.uncertaintyPercent}</td>
+                    <td className="px-3 py-2 text-right font-mono text-blue-700">
+                      {((c.concentration * c.uncertaintyPercent) / 100).toFixed(4)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setMixGasDetail(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+              >Close</button>
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 };

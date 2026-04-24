@@ -98,9 +98,10 @@ const ToolsPage: React.FC = () => {
       setIsModalOpen(false);
       setSelectedTool(null);
       await loadTools();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving tool:', error);
-      setError('Failed to save tool. Please try again.');
+      const msg = error?.response?.data?.message || 'Failed to save tool. Please try again.';
+      setError(msg);
     }
   };
 
@@ -193,6 +194,8 @@ const ToolsPage: React.FC = () => {
           onSave={handleSave}
           onDelete={handleDelete}
           initialData={selectedTool}
+          isAdmin={user?.role === 'admin'}
+          onBlockToggle={loadTools}
         />
       )}
     </div>
