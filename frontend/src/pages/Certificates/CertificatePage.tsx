@@ -72,6 +72,7 @@ const CertificatePage: React.FC = () => {
   
   const itemsPerPage = 10;
   const canModify = user?.role === 'admin' || user?.role === 'technician';
+  const isAdmin = user?.role === 'admin';
 
   // API Functions
   const fetchUserInfo = async () => {
@@ -385,7 +386,7 @@ const CertificatePage: React.FC = () => {
       searchTerm={searchTerm}
       onSearchChange={handleSearchChange}
       onPageChange={setCurrentPage}
-      onEdit={canModify ? handleEditCertificate : undefined}
+      onEdit={isAdmin ? handleEditCertificate : undefined}
       onView={handleViewCertificate}
       onDelete={canModify ? handleDeleteCertificate : undefined}
       onBulkApprove={canModify ? handleBulkApprove : undefined}
@@ -398,7 +399,7 @@ const CertificatePage: React.FC = () => {
 
 
       {/* Modal */}
-      {(canModify || modalMode === 'view') && (
+      {(isAdmin || (canModify && modalMode === 'create') || modalMode === 'view') && (
         <CertificateModal
           isOpen={isModalOpen}
           mode={modalMode}

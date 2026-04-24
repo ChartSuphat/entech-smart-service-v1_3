@@ -650,10 +650,19 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         }
       });
 
-      // Restore certType and Biogas/CEMS-specific state
-      if (fullCertificate.certType === 'cems' || fullCertificate.certType === 'biogas' || fullCertificate.certType === 'biogas_cems') {
-        setCertType(fullCertificate.certType === 'cems' ? 'cems' : 'biogas');
+      // Restore certType for all certs
+      const savedCertType = fullCertificate.certType === 'cems' ? 'cems'
+        : (fullCertificate.certType === 'biogas' || fullCertificate.certType === 'biogas_cems') ? 'biogas'
+        : 'gas';
+      setCertType(savedCertType);
 
+      // Restore the standard gas tool selector — always restore from saved toolId
+      if (fullCertificate.toolId) {
+        setBiogasToolIds([fullCertificate.toolId]);
+      }
+
+      // Restore Biogas/CEMS-specific state
+      if (savedCertType !== 'gas') {
         // Restore multiRows from calibrationData
         const toRow = (r: any) => ({
           gasName: r.gasType, gasUnit: r.gasUnit, standardValue: r.standardValue || 0,
@@ -1148,8 +1157,9 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           // return formData.customerId !== '' && formData.calibrationPlace.trim() !== '';
         }
       case 2: {
-        const base = formData.equipmentId !== '' && formData.probeId !== '' && biogasToolIds.some(id => id > 0);
-        if (certType !== 'gas') return base && calZeroToolId > 0;
+        const hasTools = biogasToolIds.some(id => id > 0) || (mode !== 'create' && formData.toolId > 0);
+        const base = formData.equipmentId !== '' && formData.probeId !== '' && hasTools;
+        if (certType !== 'gas') return base && (calZeroToolId > 0 || mode !== 'create');
         return base;
       }
       case 3: return true; // Cal Zero (biogas_cems) or Measurements (gas)
@@ -3810,7 +3820,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
               {/* STEP 3: Cal Zero for biogas_cems, OR Measurements for gas */}
               {certType !== 'gas'
                 ? (currentStep === 3 || mode !== 'create') && renderCalZeroStep()
-                : (currentStep === 3 || mode !== 'create') && formData.equipmentId && formData.probeId && biogasToolIds.some(id => id > 0) && renderMeasurementsAndEnvironment()
+                : (currentStep === 3 || mode !== 'create') && formData.equipmentId && formData.probeId && (biogasToolIds.some(id => id > 0) || (mode !== 'create' && formData.toolId > 0)) && renderMeasurementsAndEnvironment()
               }
 
               {/* STEP 4: Measurements for biogas/cems (gas has no step 4) */}
