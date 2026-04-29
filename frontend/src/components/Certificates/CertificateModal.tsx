@@ -661,9 +661,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         setBiogasToolIds([fullCertificate.toolId]);
       }
 
-      // Restore Biogas/CEMS-specific state
-      if (savedCertType !== 'gas') {
-        // Restore multiRows from calibrationData
+      // Restore multiRows from calibrationData for ALL cert types
+      {
         const toRow = (r: any) => ({
           gasName: r.gasType, gasUnit: r.gasUnit, standardValue: r.standardValue || 0,
           uncertaintyStandard: r.uncertaintyStandard || 0,
@@ -677,8 +676,10 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
             setMultiAdjRows(fullCertificate.adjustedData.map(toRow));
           }
         }
+      }
 
-        // Restore cal zero state from calZeroData JSON
+      // Restore cal zero state (biogas/cems only)
+      if (savedCertType !== 'gas') {
         const czd = fullCertificate.calZeroData;
         if (czd) {
           if (czd.zeroToolId) setCalZeroToolId(czd.zeroToolId);
