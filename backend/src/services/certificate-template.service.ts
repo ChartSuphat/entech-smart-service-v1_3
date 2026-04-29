@@ -317,7 +317,7 @@ if (certificate.approvedBy?.signature) {
       for (const row of calibrationData) {
         const refNo = row.referenceNo || tool?.certificateNumber || 'N/A';
         const vendor = row.vendor || tool?.vendorName || 'N/A';
-        const dueDate = row.certDueDate || (tool?.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A');
+        const dueDate = row.certDueDate || (tool?.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : 'N/A');
         const gasUnit = row.gasUnit || 'ppm';
         const standard = `${row.gasType} ${row.standardValue} ${gasUnit}`;
 
@@ -339,7 +339,7 @@ if (certificate.approvedBy?.signature) {
     // Fallback: single tool
     if (tool) {
       const gasUnit = tool.gasUnit || 'ppm';
-      const dueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : 'N/A';
+      const dueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : 'N/A';
       let refs: StandardReference[];
       if (tool.isMixGas && tool.components?.length) {
         refs = tool.components.map((c: any) => ({

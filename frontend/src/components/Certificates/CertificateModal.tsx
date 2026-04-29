@@ -876,7 +876,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   const toolToRows = (tool: Tool): MultiRow[] => {
     const refNo = tool.certificateNumber || '';
     const vendor = tool.vendorName || '';
-    const certDueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
+    const certDueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : '';
     if (tool.isMixGas && tool.components?.length) {
       return tool.components.map(c => ({
         gasName: c.gasName, gasUnit: c.gasUnit, standardValue: c.concentration,
@@ -1654,7 +1654,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
             zeroToolId: calZeroToolId,
             zeroReferenceNo: zeroTool?.certificateNumber || '',
             zeroVendor: zeroTool?.vendorName || '',
-            zeroDueDate: zeroTool?.dueDate ? new Date(zeroTool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '',
+            zeroDueDate: zeroTool?.dueDate ? new Date(zeroTool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : '',
             zeroGasName: zeroTool ? `${zeroTool.gasName} ${zeroTool.concentration} ${zeroTool.gasUnit || '%'}` : '',
             beforeRows: calZeroRows.map(row => ({
               gasType: row.gasName,
