@@ -221,7 +221,7 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
                   <td className="px-4 py-3 border-r border-gray-200">
                     {tool.isMixGas
                       ? (tool.components?.length
-                          ? [...new Set(tool.components.map(c => c.gasUnit).filter(Boolean))].join(' / ')
+                          ? [...new Set(tool.components.map((c: any) => c.gasUnit).filter(Boolean))].join(' / ')
                           : '-')
                       : (tool.gasUnit || 'ppm')}
                   </td>
