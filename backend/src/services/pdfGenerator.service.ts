@@ -150,7 +150,7 @@ export class PDFGeneratorService {
       const page = await browser.newPage();
       
       // Set content and wait for it to load
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'domcontentloaded' });
       
       // Generate PDF with A4 settings
       const pdfUint8Array = await page.pdf({

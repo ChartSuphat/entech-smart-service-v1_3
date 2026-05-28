@@ -63,7 +63,7 @@ export class CertificateTemplateService {
       
       // Set content and wait for fonts/images to load
       await page.setContent(html, { 
-        waitUntil: ['networkidle0', 'domcontentloaded'] 
+        waitUntil: 'domcontentloaded'
       });
 
       // Generate PDF - explicitly type the result
