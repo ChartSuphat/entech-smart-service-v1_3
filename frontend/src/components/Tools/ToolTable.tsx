@@ -218,7 +218,13 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
                   </td>
                   <td className="px-4 py-3 border-r border-gray-200">{tool.vendorName}</td>
                   <td className="px-4 py-3 border-r border-gray-200">{tool.isMixGas ? '-' : Number(tool.concentration).toFixed(3)}</td>
-                  <td className="px-4 py-3 border-r border-gray-200">{tool.isMixGas ? '-' : (tool.gasUnit || 'ppm')}</td>
+                  <td className="px-4 py-3 border-r border-gray-200">
+                    {tool.isMixGas
+                      ? (tool.components?.length
+                          ? [...new Set(tool.components.map(c => c.gasUnit).filter(Boolean))].join(' / ')
+                          : '-')
+                      : (tool.gasUnit || 'ppm')}
+                  </td>
                   <td className="px-4 py-3 border-r border-gray-200">{tool.isMixGas ? '-' : tool.uncertaintyPercent}</td>
                   <td className="px-4 py-3 cursor-help text-blue-700 border-r border-gray-200" title="(Concentration × %Uncertainty) / 100">
                     {tool.isMixGas ? '-' : ucc}
