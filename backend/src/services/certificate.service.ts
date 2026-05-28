@@ -94,7 +94,7 @@ export class CertificateService {
       equipment: true,
       probe: true,
       customer: true,
-      tool: true, // This is already correct
+      tool: { include: { components: true } },
       createdBy: {
         select: { id: true, fullName: true, email: true, signature: true }
       },
@@ -181,7 +181,7 @@ export class CertificateService {
   // Prepare calibration data for creation - include gasUnit from tool
   const calibrationDataCreate = data.calibrationData?.map(cal => ({
     gasType: cal.gasType,
-    gasUnit: cal.gasUnit || toolGasUnit,
+    gasUnit: cal.gasUnit || 'ppm',
     referenceNo: cal.referenceNo || null,
     vendor: cal.vendor || null,
     certDueDate: cal.certDueDate || null,

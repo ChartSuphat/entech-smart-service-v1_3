@@ -129,7 +129,7 @@ export class CertificateTemplateService {
       }
 
       // Process calibration data with gasUnit from tool
-      const gasUnit = certificate.tool?.gasUnit || 'ppm';
+      const gasUnit = (certificate.tool?.gasUnit && certificate.tool.gasUnit !== 'N/A') ? certificate.tool.gasUnit : 'ppm';
       const processedCalibrationData = this.padToMinRows(this.processCalibrationData(certificate.calibrationData, gasUnit));
       const processedAdjustedData = certificate.adjustedData && certificate.adjustedData.length > 0 ?
         this.padToMinRows(this.processCalibrationData(certificate.adjustedData, gasUnit)) : [];
@@ -241,7 +241,7 @@ if (certificate.approvedBy?.signature) {
 
       return {
         ...data,
-        gasUnit: data.gasUnit || gasUnit, // Use row's gasUnit if exists, otherwise use fallback
+        gasUnit: (data.gasUnit && data.gasUnit !== 'N/A') ? data.gasUnit : gasUnit,
         meanValue: Number(meanValue.toFixed(2)),
         error: Number(error.toFixed(2)),
         repeatability: Number(repeatability.toFixed(1)),
