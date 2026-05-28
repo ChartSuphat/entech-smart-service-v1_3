@@ -595,7 +595,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           ? new Date(fullCertificate.dateOfCalibration).toISOString().split('T')[0]
           : '',
         receivingNo: fullCertificate.receivingNo || '',
-        resolution: fullCertificate.resolution || 0.1,
+        resolution: fullCertificate.calibrationData?.[0]?.resolution ?? 0.1,
         remarks: fullCertificate.remarks || '',
         // ... rest of your existing measurement data loading ...
         measurementData: {
@@ -960,7 +960,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
     }
   }, [certType]);
 
-  // Recalculate when measurement values change
+  // Recalculate when measurement values or resolution changes
   useEffect(() => {
     const beforeMeasurements = formData.measurementData.beforeAdjustment;
     if (beforeMeasurements.measure1 || beforeMeasurements.measure2 || beforeMeasurements.measure3 || beforeMeasurements.standardValue) {
@@ -970,7 +970,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
     formData.measurementData.beforeAdjustment.measure1,
     formData.measurementData.beforeAdjustment.measure2,
     formData.measurementData.beforeAdjustment.measure3,
-    formData.measurementData.beforeAdjustment.standardValue
+    formData.measurementData.beforeAdjustment.standardValue,
+    formData.resolution
   ]);
 
   useEffect(() => {
@@ -982,7 +983,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
     formData.measurementData.afterAdjustment.measure1,
     formData.measurementData.afterAdjustment.measure2,
     formData.measurementData.afterAdjustment.measure3,
-    formData.measurementData.afterAdjustment.standardValue
+    formData.measurementData.afterAdjustment.standardValue,
+    formData.resolution
   ]);
 
   // =============================================
@@ -1229,13 +1231,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         ...prev,
         resolution: parseFloat(value) || 0
       }));
-      // Recalculate both uncertainty budgets when resolution changes
-      setTimeout(() => {
-        calculateUncertaintyBudget('before');
-        if (formData.hasAdjustment) {
-          calculateUncertaintyBudget('after');
-        }
-      }, 10);
+      // Recalculation is triggered automatically via the measurement useEffects
+      // (formData.resolution is in their dependency arrays)
     } else {
       setFormData(prev => ({
         ...prev,
@@ -1255,14 +1252,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
     if (!measure1 && !measure2 && !measure3) return;
 
     // Calculate mean of UUC: (measure1 + measure2 + measure3) / 3
-    const meanUUC = Math.round(((measure1 + measure2 + measure3) / 3) * 1000) / 1000;
+    const meanFull = (measure1 + measure2 + measure3) / 3;
+    const meanUUC = Math.round(meanFull * 1000) / 1000;
 
     // Calculate error: mean of UUC - standard value
-    const error = Math.round((meanUUC - standardValue) * 1000) / 1000;
+    const error = Math.round((meanFull - standardValue) * 1000) / 1000;
 
-    // Calculate repeatability using SAMPLE standard deviation (N-1) for 3 measurements
-    const mean = meanUUC;
-    const variance = ((measure1 - mean) ** 2 + (measure2 - mean) ** 2 + (measure3 - mean) ** 2) / (3 - 1);
+    // Calculate repeatability using full-precision mean to avoid rounding error propagation
+    const variance = ((measure1 - meanFull) ** 2 + (measure2 - meanFull) ** 2 + (measure3 - meanFull) ** 2) / (3 - 1);
     const repeatability = Math.sqrt(variance) / Math.sqrt(2);
 
     console.log('🧮 Calculating with fresh values for', type, ':', {
