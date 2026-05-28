@@ -1260,7 +1260,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
     // Calculate repeatability using full-precision mean to avoid rounding error propagation
     const variance = ((measure1 - meanFull) ** 2 + (measure2 - meanFull) ** 2 + (measure3 - meanFull) ** 2) / (3 - 1);
-    const repeatability = Math.sqrt(variance) / Math.sqrt(2);
+    const repeatability = Math.sqrt(variance);
 
     console.log('🧮 Calculating with fresh values for', type, ':', {
       measure1, measure2, measure3,

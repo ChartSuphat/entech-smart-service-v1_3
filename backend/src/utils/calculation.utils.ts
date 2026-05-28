@@ -13,7 +13,7 @@ export const calculateCalibrationValues = (data: {
   // Calculate repeatability
   const variance = measurements.reduce((sum, val) => sum + Math.pow(val - meanValue, 2), 0) / (measurements.length - 1);
   const stdDev = Math.sqrt(variance);
-  const repeatability = stdDev / Math.sqrt(2);
+  const repeatability = stdDev;
   
   // Calculate resolution uncertainty
   const resolutionUncertainty = data.resolution / Math.sqrt(3);
