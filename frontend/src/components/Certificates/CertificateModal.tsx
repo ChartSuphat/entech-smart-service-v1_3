@@ -169,6 +169,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   // Tracks which certificate ID was most recently requested — used to discard stale async responses
   const activeCertIdRef = useRef<number | null>(null);
 
+  const [showExpiredGas, setShowExpiredGas] = useState(false);
+
   // Form state
   const [formData, setFormData] = useState({
     certificateNo: '',
@@ -420,13 +422,9 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         toolsArray = toolsData.tools;
       }
 
-      const activeTools = toolsArray.filter((tool: any) => {
-        if (tool.isBlocked) return false;
-        if (!tool.dueDate) return true;
-        return new Date(tool.dueDate) > new Date();
-      });
-
-      setAllTools(activeTools);
+      // Store all non-blocked tools — expiry filtering happens at render time using calibration date
+      const nonBlockedTools = toolsArray.filter((tool: any) => !tool.isBlocked);
+      setAllTools(nonBlockedTools);
     } catch (error: any) {
       console.error('💥 Error loading data:', error);
     }
@@ -2091,13 +2089,32 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
             name="calibrationPlace"
             value={formData.calibrationPlace}
             onChange={handleInputChange}
-            disabled={mode === 'view'} // Only disabled in view mode
+            disabled={mode === 'view'}
             required
             placeholder="Enter Calibration Location"
             className="w-full px-4 py-3 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
           />
           <div className="text-xs text-gray-500 mt-1">
             Specify where the calibration will be performed
+          </div>
+        </div>
+
+        {/* Calibration Date — collected here so gas filter in Step 2 uses the correct date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Date of Calibration <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="dateOfCalibration"
+            value={formData.dateOfCalibration}
+            onChange={handleInputChange}
+            disabled={mode === 'view'}
+            required
+            className="w-full px-4 py-3 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+          />
+          <div className="text-xs text-gray-500 mt-1">
+            Used to determine which standard gases were valid on that date
           </div>
         </div>
       </div>
@@ -2319,9 +2336,22 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           {/* Gas / Biogas/CEMS: searchable multi-tank selector */}
           {(certType === 'gas' || certType === 'biogas' || certType === 'cems') && (
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-purple-700">
-                Standard Gas ({allTools.length} available)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-purple-700">
+                  Standard Gas ({availableTools.length} available)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowExpiredGas(v => !v)}
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                    showExpiredGas
+                      ? 'bg-orange-100 text-orange-700 border-orange-300'
+                      : 'bg-gray-50 text-gray-500 border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  {showExpiredGas ? 'Hiding expired' : 'Show expired'}
+                </button>
+              </div>
               {biogasToolIds.map((toolId, idx) => {
                 const selected = allTools.find(t => t.id === toolId);
                 const term = toolSearchTerms[idx] ?? '';
@@ -2329,7 +2359,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                 const toolLabel = (t: Tool) => t.isMixGas
                   ? `[Mixed] ${t.certificateNumber} - ${t.vendorName}`
                   : `${t.gasName} - ${t.concentration} ${t.gasUnit || 'ppm'} — ${t.certificateNumber}`;
-                const filtered = allTools.filter(t =>
+                const filtered = availableTools.filter(t =>
                   term.trim() === '' ||
                   t.gasName.toLowerCase().includes(term.toLowerCase()) ||
                   t.certificateNumber.toLowerCase().includes(term.toLowerCase()) ||
@@ -3311,15 +3341,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Calibration Date
+              Issue Date
+              <span className="text-xs text-gray-400 ml-1">(auto-filled)</span>
             </label>
             <input
               type="date"
-              name="dateOfCalibration"
-              value={formData.dateOfCalibration}
-              onChange={handleInputChange}
-              disabled={mode === 'view'}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              value={issueDate || new Date().toISOString().split('T')[0]}
+              disabled
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
             />
           </div>
 
@@ -3807,6 +3836,16 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   // =============================================
 
   // REPLACE your main render function with this corrected structure:
+
+  // Filter available tools: exclude expired ones based on calibration date unless showExpiredGas is on
+  const availableTools = showExpiredGas ? allTools : allTools.filter(tool => {
+    if (!tool.dueDate) return true;
+    const calibDate = formData.dateOfCalibration ? new Date(formData.dateOfCalibration) : new Date();
+    calibDate.setHours(0, 0, 0, 0);
+    const dueEnd = new Date(tool.dueDate);
+    dueEnd.setHours(23, 59, 59, 999);
+    return dueEnd >= calibDate;
+  });
 
   if (!isOpen) return null;
 

@@ -333,7 +333,7 @@ const EquipmentTable: React.FC<Props> = ({
               <div className="flex items-center gap-3">
                 <input
                   type="text"
-                  placeholder="Search Instrument"
+                  placeholder="Search by model, serial, control no."
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-50 text-sm"
                   value={instrumentSearchTerm}
                   onChange={(e) => setInstrumentSearchTerm(e.target.value)}
@@ -458,7 +458,7 @@ const EquipmentTable: React.FC<Props> = ({
               <div className="flex items-center gap-3">
                 <input
                   type="text"
-                  placeholder="Search Probe"
+                  placeholder="Search by description, serial, control no."
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-50 text-sm"
                   value={probeSearchTerm}
                   onChange={(e) => setProbeSearchTerm(e.target.value)}
