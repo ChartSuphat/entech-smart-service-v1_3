@@ -14,6 +14,7 @@ interface ProbeFormData {
   probeDescription: string;
   probeModel: string;
   probeSN: string;
+  idNoOrControlNo?: string;
 }
 
 interface EditProbeData extends ProbeFormData {
@@ -31,7 +32,8 @@ const AddProbeModal: React.FC<Props> = ({
   const [formData, setFormData] = useState<ProbeFormData>({
     probeDescription: 'CATALYTIC SENSOR',
     probeModel: '',
-    probeSN: ''
+    probeSN: '',
+    idNoOrControlNo: ''
   });
 
   const [errors, setErrors] = useState<Partial<ProbeFormData>>({});
@@ -50,7 +52,8 @@ const AddProbeModal: React.FC<Props> = ({
       setFormData({
         probeDescription: editData.probeDescription,
         probeModel: editData.probeModel,
-        probeSN: editData.probeSN
+        probeSN: editData.probeSN,
+        idNoOrControlNo: editData.idNoOrControlNo || ''
       });
 
       const isPreset = sensorTypes.some(sensor => sensor.value === editData.probeDescription);
@@ -59,7 +62,8 @@ const AddProbeModal: React.FC<Props> = ({
       setFormData({
         probeDescription: 'CATALYTIC SENSOR',
         probeModel: '',
-        probeSN: ''
+        probeSN: '',
+        idNoOrControlNo: ''
       });
       setSelectedPreset('CATALYTIC SENSOR');
     }
@@ -103,7 +107,8 @@ const AddProbeModal: React.FC<Props> = ({
       onSubmit({
         probeDescription: formData.probeDescription.trim(),
         probeModel: formData.probeModel.trim(),
-        probeSN: formData.probeSN.trim()
+        probeSN: formData.probeSN.trim(),
+        idNoOrControlNo: formData.idNoOrControlNo?.trim() || undefined
       });
     }
   };
@@ -113,7 +118,8 @@ const AddProbeModal: React.FC<Props> = ({
       setFormData({
         probeDescription: 'CATALYTIC SENSOR',
         probeModel: '',
-        probeSN: ''
+        probeSN: '',
+        idNoOrControlNo: ''
       });
       setSelectedPreset('CATALYTIC SENSOR');
       setErrors({});
@@ -225,6 +231,20 @@ const AddProbeModal: React.FC<Props> = ({
             {errors.probeSN && (
               <p className="mt-1.5 text-sm text-red-600">{errors.probeSN}</p>
             )}
+          </div>
+
+          {/* Control No. */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Control No.</label>
+            <input
+              type="text"
+              name="idNoOrControlNo"
+              value={formData.idNoOrControlNo || ''}
+              onChange={handleInputChange}
+              disabled={isLoading}
+              placeholder="e.g., CT-001"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
 
           {/* Info box */}

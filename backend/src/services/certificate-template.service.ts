@@ -21,7 +21,7 @@ import {
 
 export class CertificateTemplateService {
   private prisma: PrismaClient;
-  private templateCache: Map<string, handlebars.TemplateDelegate> = new Map();
+  private templateCache: Map<string, { fn: handlebars.TemplateDelegate; mtime: number }> = new Map();
 
   constructor() {
     this.prisma = new PrismaClient();
@@ -538,20 +538,20 @@ if (certificate.approvedBy?.signature) {
    * Load and compile Handlebars template
    */
   private async getTemplate(templateName: string): Promise<handlebars.TemplateDelegate> {
-    if (this.templateCache.has(templateName)) {
-      return this.templateCache.get(templateName)!;
-    }
-
     try {
-      // Updated path resolution to be more flexible
       const templatePath = path.join(__dirname, '..', 'template', `${templateName}.hbs`);
-      console.log('📂 Loading template from:', templatePath);
-      
+      const { mtimeMs } = await fs.stat(templatePath);
+
+      const cached = this.templateCache.get(templateName);
+      if (cached && cached.mtime === mtimeMs) {
+        return cached.fn;
+      }
+
+      console.log('📂 (Re)loading template from:', templatePath);
       const templateContent = await fs.readFile(templatePath, 'utf-8');
-      const template = handlebars.compile(templateContent);
-      
-      this.templateCache.set(templateName, template);
-      return template;
+      const fn = handlebars.compile(templateContent);
+      this.templateCache.set(templateName, { fn, mtime: mtimeMs });
+      return fn;
     } catch (error) {
       console.error(`💥 Error loading template ${templateName}:`, error);
       throw new Error(`Template ${templateName} not found at expected location`);
@@ -573,14 +573,17 @@ private registerHandlebarsHelpers(): void {
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     const day = d.getDate().toString().padStart(2, '0');
+    const dayNopad = d.getDate().toString();
     const month = months[d.getMonth()];
     const year = d.getFullYear().toString().slice(-2);
-    
+
     switch (format) {
       case 'DD-MMM-YY':
         return `${day}-${month}-${year}`;
       case 'DD-MMM-YYYY':
         return `${day}-${month}-${d.getFullYear()}`;
+      case 'D-MMM-YYYY':
+        return `${dayNopad}-${month}-${d.getFullYear()}`;
       case 'DD/MM/YY':
         return `${day}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${year}`;
       default:

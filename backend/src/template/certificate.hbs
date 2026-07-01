@@ -41,7 +41,7 @@
             transform: translate(-50%, -50%) rotate(-45deg);
             font-size: 120px;
             font-weight: bold;
-            color: rgba(255, 0, 0, 0.3);
+            color: rgba(150, 150, 150, 0.25);
             pointer-events: none;
             z-index: 1000;
             font-family: Arial, sans-serif;
@@ -78,6 +78,7 @@
             }
 
             .draft-watermark {
+    color: rgba(150, 150, 150, 0.25) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
@@ -322,7 +323,7 @@
 
         <div class="certificate-info-section" style="padding-right: 30px;">
             <div><strong>Certificate No.:</strong> {{certificate.certificateNo}}</div>
-            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "DD-MMM-YY"}}</div>
+            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "D-MMM-YYYY"}}</div>
         </div>
 
         <div class="section-group">
@@ -390,7 +391,7 @@
                 <tr>
                     <td>Receiving Date</td>
                     <td>:</td>
-                    <td>{{formatDate certificate.dateOfCalibration "DD-MMM-YY"}}</td>
+                    <td>{{formatDate certificate.dateOfCalibration "D-MMM-YYYY"}}</td>
                 </tr>
                 <tr>
                     <td>Parameter of Calibration</td>
@@ -451,7 +452,7 @@
                 <tr>
                     <td>Date of Calibration</td>
                     <td>:</td>
-                    <td>{{formatDate certificate.dateOfCalibration "DD-MMM-YY"}}</td>
+                    <td>{{formatDate certificate.dateOfCalibration "D-MMM-YYYY"}}</td>
                 </tr>
             </table>
         </div>
@@ -483,9 +484,9 @@
         </div>
 
         <div style="position: absolute; bottom: 16mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
-            <div>FM-CL-09-C Rev.8</div>
+            <div>FM-SV-10-SI Rev.0</div>
             <div>Page 1 of {{calculations.totalPages}}</div>
-            <div>Issued Date {{formatDate certificate.dateOfIssue "DD/MM/YY"}}</div>
+            <div>Issued Date {{formatDate certificate.dateOfIssue "D-MMM-YYYY"}}</div>
         </div>
 
         <div style="position: absolute; bottom: 12.5mm; left: 10mm; right: 10mm; text-align: left; font-size: 9px; font-weight: bold;">
@@ -495,7 +496,7 @@
         <div style="position: absolute; bottom: 11mm; left: 10mm; right: 10mm; border-bottom: 1px solid #000;"></div>
 
         <div style="position: absolute; bottom: 2mm; left: 10mm; right: 10mm; text-align: center; font-size: 10px; line-height: 1.2;">
-            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.0-2779-8855 info@entechsi.com</div>
+            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.02-779-8855 info@entechsi.com</div>
             <div>Tax ID :0105565020602 www.entechsi.com</div>
         </div>
     </div>
@@ -523,7 +524,7 @@
 
         <div class="certificate-info-section" style="padding-right: 30px;">
             <div><strong>Certificate No.:</strong> {{certificate.certificateNo}}</div>
-            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "DD-MMM-YY"}}</div>
+            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "D-MMM-YYYY"}}</div>
         </div>
 
         <div class="info-section">
@@ -648,9 +649,9 @@
         </div>
 
         <div style="position: absolute; bottom: 16mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
-            <div>FM-CL-09-C Rev.8</div>
+            <div>FM-SV-10-SI Rev.0</div>
             <div>Page 2 of {{calculations.totalPages}}</div>
-            <div>Issued Date {{formatDate certificate.dateOfIssue "DD/MM/YY"}}</div>
+            <div>Issued Date {{formatDate certificate.dateOfIssue "D-MMM-YYYY"}}</div>
         </div>
 
         <div style="position: absolute; bottom: 12.5mm; left: 10mm; right: 10mm; text-align: left; font-size: 9px; font-weight: bold;">
@@ -660,7 +661,7 @@
         <div style="position: absolute; bottom: 11mm; left: 10mm; right: 10mm; border-bottom: 1px solid #000;"></div>
 
         <div style="position: absolute; bottom: 2mm; left: 10mm; right: 10mm; text-align: center; font-size: 10px; line-height: 1.2;">
-            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.0-2779-8855 info@entechsi.com</div>
+            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.02-779-8855 info@entechsi.com</div>
             <div>Tax ID :0105565020602 www.entechsi.com</div>
         </div>
     </div>
@@ -690,7 +691,7 @@
 
         <div class="certificate-info-section" style="padding-right: 30px;">
             <div><strong>Certificate No.:</strong> {{certificate.certificateNo}}</div>
-            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "DD-MMM-YY"}}</div>
+            <div><strong>Date of issue:</strong> {{formatDate certificate.dateOfIssue "D-MMM-YYYY"}}</div>
         </div>
 
         <div class="info-section">
@@ -794,9 +795,9 @@
         </div>
 
         <div style="position: absolute; bottom: 16mm; left: 10mm; right: 10mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px;">
-            <div>FM-CL-09-C Rev.8</div>
+            <div>FM-SV-10-SI Rev.0</div>
             <div>Page 3 of {{calculations.totalPages}}</div>
-            <div>Issued Date {{formatDate certificate.dateOfIssue "DD/MM/YY"}}</div>
+            <div>Issued Date {{formatDate certificate.dateOfIssue "D-MMM-YYYY"}}</div>
         </div>
 
         <div style="position: absolute; bottom: 12.5mm; left: 10mm; right: 10mm; text-align: left; font-size: 9px; font-weight: bold;">
@@ -806,7 +807,7 @@
         <div style="position: absolute; bottom: 11mm; left: 10mm; right: 10mm; border-bottom: 1px solid #000;"></div>
 
         <div style="position: absolute; bottom: 2mm; left: 10mm; right: 10mm; text-align: center; font-size: 10px; line-height: 1.2;">
-            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.0-2779-8855 info@entechsi.com</div>
+            <div>17/121 Soi Ngamwongwan 47 Yaek 48, Thoongsangphong, Laksi, Bangkok 10210 THAILAND Tel.02-779-8855 info@entechsi.com</div>
             <div>Tax ID :0105565020602 www.entechsi.com</div>
         </div>
     </div>

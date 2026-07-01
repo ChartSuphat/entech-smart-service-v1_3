@@ -69,7 +69,8 @@ const CertificatePage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [certTypeFilter, setCertTypeFilter] = useState<'all' | 'gas' | 'biogas' | 'cems'>('all');
+
   const itemsPerPage = 10;
   const canModify = user?.role === 'admin' || user?.role === 'technician';
   const isAdmin = user?.role === 'admin';
@@ -203,13 +204,24 @@ const CertificatePage: React.FC = () => {
   useEffect(() => { if (user) fetchAllCertificates(); }, [user, canModify]);
   
   useEffect(() => {
-    let processed = searchCertificates(allCertificates, searchTerm);
+    let processed = allCertificates;
+
+    if (certTypeFilter !== 'all') {
+      processed = processed.filter(cert => {
+        const t = cert.certType || 'gas';
+        if (certTypeFilter === 'gas') return t === 'gas';
+        if (certTypeFilter === 'biogas') return t === 'biogas' || t === 'biogas_cems';
+        if (certTypeFilter === 'cems') return t === 'cems' || t === 'biogas_cems';
+        return true;
+      });
+    }
+
+    processed = searchCertificates(processed, searchTerm);
     processed = sortCertificates(processed, sortConfig);
-   
-    
+
     setFilteredCertificates(processed);
     setTotalPages(1);
-  }, [allCertificates, searchTerm, sortConfig, currentPage]);
+  }, [allCertificates, searchTerm, sortConfig, currentPage, certTypeFilter]);
 
   // Handlers
   const handleSort = (field: SortField) => {
@@ -326,16 +338,48 @@ const CertificatePage: React.FC = () => {
     fetchAllCertificates();
   };
 
+  const filterButtons: { key: 'all' | 'gas' | 'biogas' | 'cems'; label: string; color: string }[] = [
+    { key: 'all',    label: 'All Certificates', color: 'gray' },
+    { key: 'gas',    label: 'Gas',              color: 'blue' },
+    { key: 'biogas', label: 'Biogas',           color: 'green' },
+    { key: 'cems',   label: 'CEMS',             color: 'orange' },
+  ];
+
   return (
     <div className="w-full">
       {/* Dashboard-Consistent Header */}
-     
-        
-          <h1 className="text-3xl font-bold text-blue-600 mb-8">
+          <h1 className="text-3xl font-bold text-blue-600 mb-4 px-6 pt-6">
             Certificate Management
           </h1>
-        
-      
+
+      {/* Cert Type Filter Buttons */}
+      <div className="px-6 mb-4">
+        <p className="text-sm text-gray-500 mb-3">
+          Found {filteredCertificates.length} certificate{filteredCertificates.length !== 1 ? 's' : ''}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {filterButtons.map(({ key, label, color }) => {
+            const isActive = certTypeFilter === key;
+            const colorMap: Record<string, { active: string; inactive: string }> = {
+              gray:   { active: 'bg-gray-600 text-white border-gray-600',     inactive: 'bg-white text-gray-600 border-gray-400 hover:bg-gray-50' },
+              blue:   { active: 'bg-blue-600 text-white border-blue-600',     inactive: 'bg-white text-blue-600 border-blue-600 hover:bg-blue-50' },
+              green:  { active: 'bg-green-600 text-white border-green-600',   inactive: 'bg-white text-green-600 border-green-600 hover:bg-green-50' },
+              orange: { active: 'bg-orange-500 text-white border-orange-500', inactive: 'bg-white text-orange-500 border-orange-500 hover:bg-orange-50' },
+            };
+            return (
+              <button
+                key={key}
+                onClick={() => { setCertTypeFilter(key); setCurrentPage(1); }}
+                className={`px-4 py-2 rounded-md border font-medium text-sm transition-colors ${
+                  isActive ? colorMap[color].active : colorMap[color].inactive
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Compact Search & Add Section - Mobile Optimized */}
 <div className="p-2 sm:p-4 md:p-6">

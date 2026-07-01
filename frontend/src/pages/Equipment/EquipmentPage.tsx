@@ -23,6 +23,7 @@ interface Probe {
   probeDescription: string;
   probeModel: string;
   probeSN: string;
+  idNoOrControlNo?: string;
   createdAt: string;
   updatedAt: string;
   createdById: number;
@@ -377,7 +378,8 @@ const EquipmentPage: React.FC = () => {
       const response = await api.post('/equipment/probes', {
         probeDescription: probeData.probeDescription,
         probeModel: probeData.probeModel,
-        probeSN: probeData.probeSN
+        probeSN: probeData.probeSN,
+        idNoOrControlNo: probeData.idNoOrControlNo || undefined
       });
 
       if (response.data.success) {
@@ -452,7 +454,8 @@ const EquipmentPage: React.FC = () => {
       const response = await api.post(`/equipment/probes/${editingProbe.id}`, {
         probeDescription: probeData.probeDescription,
         probeModel: probeData.probeModel,
-        probeSN: probeData.probeSN
+        probeSN: probeData.probeSN,
+        idNoOrControlNo: probeData.idNoOrControlNo || undefined
       });
 
       if (response.data.success) {
@@ -701,11 +704,12 @@ const EquipmentPage: React.FC = () => {
             onClose={handleCloseProbeModal}
             onSubmit={editingProbe ? handleEditProbe : handleAddProbe}
             onDelete={editingProbe ? () => handleDeleteProbe(editingProbe.id) : undefined}
-            editData={editingProbe ? { 
-              id: parseInt(editingProbe.id), 
+            editData={editingProbe ? {
+              id: parseInt(editingProbe.id),
               probeDescription: editingProbe.probeDescription,
               probeModel: editingProbe.probeModel,
-              probeSN: editingProbe.probeSN
+              probeSN: editingProbe.probeSN,
+              idNoOrControlNo: editingProbe.idNoOrControlNo
             } : undefined}
             isLoading={isLoading}
           />

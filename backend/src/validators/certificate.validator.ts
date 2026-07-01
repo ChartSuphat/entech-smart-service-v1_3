@@ -15,7 +15,7 @@ const CalibrationDataSchema = z.object({
   referenceNo: z.string().optional(),
   vendor: z.string().optional(),
   certDueDate: z.string().optional(),
-  standardValue: z.number().positive("Standard value must be positive"),
+  standardValue: z.number().min(0, "Standard value cannot be negative"),
   measurement1: z.number().min(0, "Measurement 1 cannot be negative"),
   measurement2: z.number().min(0, "Measurement 2 cannot be negative"),
   measurement3: z.number().min(0, "Measurement 3 cannot be negative"),

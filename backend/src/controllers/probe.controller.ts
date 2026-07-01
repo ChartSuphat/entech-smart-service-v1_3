@@ -14,7 +14,8 @@ export const createProbe = async (req: any, res: Response) => {
     const {
       probeDescription,
       probeModel,
-      probeSN
+      probeSN,
+      idNoOrControlNo
     } = req.body;
 
     // Handle authentication
@@ -69,6 +70,7 @@ export const createProbe = async (req: any, res: Response) => {
         probeDescription: probeDescription.trim(),
         probeModel: probeModel.trim(),
         probeSN: probeSN.trim(),
+        idNoOrControlNo: idNoOrControlNo?.trim() || null,
         createdById: userId
       }
       // ✅ REMOVED: include createdBy - no need to show who created it
@@ -155,7 +157,8 @@ export const updateProbe = async (req: any, res: Response) => {
     const {
       probeDescription,
       probeModel,
-      probeSN
+      probeSN,
+      idNoOrControlNo
     } = req.body;
 
     const existingProbe = await prisma.probe.findUnique({
@@ -196,7 +199,8 @@ export const updateProbe = async (req: any, res: Response) => {
       data: {
         probeDescription: probeDescription ? probeDescription.trim() : existingProbe.probeDescription,
         probeModel: probeModel ? probeModel.trim() : existingProbe.probeModel,
-        probeSN: probeSN ? probeSN.trim() : existingProbe.probeSN
+        probeSN: probeSN ? probeSN.trim() : existingProbe.probeSN,
+        idNoOrControlNo: idNoOrControlNo !== undefined ? (idNoOrControlNo?.trim() || null) : existingProbe.idNoOrControlNo
       }
       // ✅ REMOVED: include createdBy - no need to show who created it
     });

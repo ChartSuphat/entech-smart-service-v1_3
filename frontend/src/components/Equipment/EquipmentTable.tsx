@@ -21,13 +21,14 @@ interface Probe {
   probeDescription: string;
   probeModel: string;
   probeSN: string;
+  idNoOrControlNo?: string;
   createdAt: string;
   updatedAt: string;
   createdById: number;
 }
 
 type InstrumentSortField = 'instrumentModel' | 'manufacturer' | 'instrumentSerialNo' | 'createdAt';
-type ProbeSortField = 'probeDescription' | 'probeModel' | 'probeSN' | 'createdAt';
+type ProbeSortField = 'probeDescription' | 'probeModel' | 'probeSN' | 'idNoOrControlNo' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
 interface InstrumentSortConfig {
@@ -235,6 +236,10 @@ const EquipmentTable: React.FC<Props> = ({
           aValue = a.probeSN || '';
           bValue = b.probeSN || '';
           break;
+        case 'idNoOrControlNo':
+          aValue = a.idNoOrControlNo || '';
+          bValue = b.idNoOrControlNo || '';
+          break;
         case 'createdAt':
           aValue = new Date(a.createdAt).getTime();
           bValue = new Date(b.createdAt).getTime();
@@ -273,7 +278,8 @@ const EquipmentTable: React.FC<Props> = ({
   const filteredProbes = safeProbes.filter((item) =>
     item.probeDescription?.toLowerCase().includes(probeSearchTerm.toLowerCase()) ||
     item.probeModel?.toLowerCase().includes(probeSearchTerm.toLowerCase()) ||
-    item.probeSN?.toLowerCase().includes(probeSearchTerm.toLowerCase())
+    item.probeSN?.toLowerCase().includes(probeSearchTerm.toLowerCase()) ||
+    (item.idNoOrControlNo?.toLowerCase().includes(probeSearchTerm.toLowerCase()) ?? false)
   );
   const sortedProbes = sortProbes(filteredProbes);
 
@@ -475,6 +481,9 @@ const EquipmentTable: React.FC<Props> = ({
                     <ProbeSortableHeader field="probeSN">
                       Serial No.
                     </ProbeSortableHeader>
+                    <ProbeSortableHeader field="idNoOrControlNo">
+                      Control No.
+                    </ProbeSortableHeader>
                     <ProbeSortableHeader field="createdAt">
                       Created Date
                     </ProbeSortableHeader>
@@ -506,6 +515,9 @@ const EquipmentTable: React.FC<Props> = ({
                       </td>
                       <td className="px-4 py-3 text-sm font-mono text-gray-900 border-r border-gray-200">
                         {item.probeSN}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
+                        {item.idNoOrControlNo || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500 border-r border-gray-200">
                         {new Date(item.createdAt).toLocaleDateString()}

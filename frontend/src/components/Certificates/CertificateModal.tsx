@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   HiX,
   HiSave,
@@ -62,6 +62,7 @@ interface Probe {
   probeDescription: string;
   probeModel: string;
   probeSN: string;
+  idNoOrControlNo?: string;
   customerId?: string;
 }
 
@@ -164,6 +165,9 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   const [hasWatermark, setHasWatermark] = useState(false);
   const [issueDate, setIssueDate] = useState('');
   const [user, setUser] = useState<any>(null); // Only add if you don't already have this
+
+  // Tracks which certificate ID was most recently requested — used to discard stale async responses
+  const activeCertIdRef = useRef<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -568,6 +572,12 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       const fullCertificate = response.data.data || response.data;
       console.log('Full certificate data loaded:', fullCertificate);
 
+      // Guard: if the user switched to a different certificate while this request was in flight, discard
+      if (activeCertIdRef.current !== certificateId) {
+        console.log('Discarding stale response for certificate', certificateId);
+        return null;
+      }
+
       // ✅ FIXED: Check both hasWatermark field AND formatType for watermark state
       const certificateHasWatermark = fullCertificate.hasWatermark === true ||
         fullCertificate.formatType === 'draft';
@@ -774,10 +784,11 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         setEquipmentInput('');
         setProbeInput('');
       } else if ((mode === 'edit' || mode === 'view') && certificate?.id) {
-        // Load complete certificate data for edit/view
+        // Mark which certificate we want — any in-flight request for a different cert will be discarded
+        activeCertIdRef.current = certificate.id;
         loadCertificateForEdit(certificate.id)
           .then((fullCertificate) => {
-            console.log('Certificate loaded successfully for', mode, 'mode');
+            if (fullCertificate) console.log('Certificate loaded successfully for', mode, 'mode');
           })
           .catch((error) => {
             console.error('Failed to load certificate:', error);
@@ -862,7 +873,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
       const filtered = filteredProbes.filter(probe =>
         probe.probeDescription.toLowerCase().includes(probeInput.toLowerCase()) ||
         probe.probeModel.toLowerCase().includes(probeInput.toLowerCase()) ||
-        probe.probeSN.toLowerCase().includes(probeInput.toLowerCase())
+        probe.probeSN.toLowerCase().includes(probeInput.toLowerCase()) ||
+        (probe.idNoOrControlNo?.toLowerCase().includes(probeInput.toLowerCase()) ?? false)
       );
       setFilteredProbesForSearch(filtered);
       setShowProbeDropdown(true);
@@ -2203,6 +2215,9 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                     <div className="text-sm font-medium text-gray-900">{probe.probeDescription}</div>
                     <div className="text-sm text-gray-500">Model: {probe.probeModel}</div>
                     <div className="text-xs text-gray-400">Serial No: {probe.probeSN}</div>
+                    {probe.idNoOrControlNo && (
+                      <div className="text-xs text-blue-500">Control No: {probe.idNoOrControlNo}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -3219,7 +3234,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                     type="checkbox"
                     id="calZeroHasAdj"
                     checked={calZeroHasAdjustment}
-                    onChange={e => setCalZeroHasAdjustment(e.target.checked)}
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      setCalZeroHasAdjustment(checked);
+                      if (checked && calZeroAdjRows.length === 0 && calZeroRows.length > 0) {
+                        const rows = calZeroRows.map(r => ({ ...r, measure1: 0, measure2: 0, measure3: 0, meanUUC: 0, error: 0 }));
+                        setCalZeroAdjRows(rows);
+                      }
+                    }}
                     disabled={mode === 'view'}
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded disabled:opacity-50"
                   />
@@ -3240,7 +3262,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
             {calZeroHasAdjustment && (
               <div className="p-4 border border-blue-200 rounded-xl bg-blue-50 shadow-sm">
                 <h4 className="text-sm font-semibold text-blue-800 flex items-center mb-3">
-                  <span className="bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 font-bold">2</span>
+                  <span className="bg-blue-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 font-bold">3</span>
                   Cal Zero Measurements (After Adjustment)
                 </h4>
                 {measureTable(calZeroAdjRows,
@@ -3251,7 +3273,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           </>
         )}
 
-        {calZeroRows.length === 0 && (
+        {calZeroToolId > 0 && calZeroRows.length === 0 && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
             ⚠ No calibration gases loaded. Please select standard gas in Step 2 first.
           </div>
@@ -3628,8 +3650,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
                       const blob = response.data;
                       const url = window.URL.createObjectURL(blob);
-                      window.open(url, '_blank');
-                      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+                      window.open(url, 'certificate_pdf_preview');
+                      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
                     } catch (error) {
                       console.error('PDF preview error:', error);
                       alert('Error previewing PDF');
