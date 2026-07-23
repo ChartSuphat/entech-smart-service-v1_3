@@ -51,7 +51,7 @@ useEffect(() => {
       icon: <HiWrenchScrewdriver size={86} />,
       label: "Equipment",
       path: "/dashboard/equipment",
-      roles: ['admin', 'technician', 'user'],
+      roles: ['admin', 'technician'],
     },
     {
       icon: <TbScubaDivingTankFilled size={86} />,
@@ -63,7 +63,7 @@ useEffect(() => {
       icon: <BsFillDeviceSsdFill  size={86} />,
       label: "Reference Devices",
       path: "/dashboard/devices",
-      roles: ['admin', 'technician', 'user'],
+      roles: ['admin', 'technician'],
     },
     {
       icon: <HiUser size={86} />,

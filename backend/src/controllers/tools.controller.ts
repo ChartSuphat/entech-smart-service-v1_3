@@ -142,15 +142,20 @@ export const getTools = async (req: Request, res: Response) => {
     const userRole = authReq.user?.role;
     const userCompanyCode = authReq.user?.companyCode;
 
-    // For 'user' role with a specific company: only show gases used in their certs
+    // For 'user' role: only show gases used in their own certs
     let whereClause: { id?: { in: number[] } } = {};
-    if (userRole === 'user' && userCompanyCode && userCompanyCode !== 'ENTCH') {
-      const certs = await prisma.certificate.findMany({
-        where: { customer: { customerId: userCompanyCode }, toolId: { not: null } },
-        select: { toolId: true }
-      });
-      const toolIds = [...new Set(certs.map(c => c.toolId as number))];
-      whereClause = { id: { in: toolIds.length > 0 ? toolIds : [-1] } };
+    if (userRole === 'user') {
+      if (!userCompanyCode || userCompanyCode === 'ENTCH') {
+        // No company assigned or Entech internal — see everything
+      } else {
+        const certs = await prisma.certificate.findMany({
+          where: { customer: { customerId: userCompanyCode }, toolId: { not: null } },
+          select: { toolId: true }
+        });
+        const toolIds = [...new Set(certs.map(c => c.toolId as number))];
+        console.log(`🔒 user role [${userCompanyCode}] → toolIds:`, toolIds);
+        whereClause = { id: { in: toolIds.length > 0 ? toolIds : [-1] } };
+      }
     }
 
     const tools = await prisma.toolsManagement.findMany({

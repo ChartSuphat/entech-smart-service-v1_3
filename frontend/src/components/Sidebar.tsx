@@ -50,9 +50,9 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const menuItems = [
     { label: 'Dashboard',         icon: <FaTachometerAlt />,         path: '/dashboard',              roles: ['admin', 'technician', 'user'] },
     { label: 'Certificates',      icon: <HiDocumentText />,          path: '/dashboard/certificates', roles: ['admin', 'technician', 'user'] },
-    { label: 'Equipment',         icon: <HiWrenchScrewdriver />,     path: '/dashboard/equipment',    roles: ['admin', 'technician', 'user'] },
+    { label: 'Equipment',         icon: <HiWrenchScrewdriver />,     path: '/dashboard/equipment',    roles: ['admin', 'technician'] },
     { label: 'Standard Gas',      icon: <TbScubaDivingTankFilled />, path: '/dashboard/tools',        roles: ['admin', 'technician', 'user'] },
-    { label: 'Reference Devices', icon: <BsFillDeviceSsdFill />,     path: '/dashboard/devices',      roles: ['admin', 'technician', 'user'] },
+    { label: 'Reference Devices', icon: <BsFillDeviceSsdFill />,     path: '/dashboard/devices',      roles: ['admin', 'technician'] },
     { label: 'Customers',         icon: <HiUser />,                  path: '/dashboard/customers',    roles: ['admin', 'technician', 'user'] },
     { label: 'User Management',   icon: <HiUserGroup />,             path: '/dashboard/admin/users',  roles: ['admin'] },
     { label: 'Settings',          icon: <HiCog6Tooth />,             path: '/dashboard/settings',     roles: ['admin', 'technician', 'user'] },
