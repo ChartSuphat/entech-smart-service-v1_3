@@ -86,10 +86,15 @@ useEffect(() => {
     
   ];
 
-  // Filter cards based on user role
-  const visibleCards = cards.filter(card =>
-    !card.roles || card.roles.includes(user?.role)
-  );
+  // External customer users (role=user, companyCode != ENTCH) are restricted
+  const isExternalUser = user?.role === 'user' && user?.companyCode && user.companyCode !== 'ENTCH';
+  const restrictedPaths = ['/dashboard/equipment', '/dashboard/devices', '/dashboard/customers'];
+
+  const visibleCards = cards.filter(card => {
+    if (!card.roles || !card.roles.includes(user?.role)) return false;
+    if (isExternalUser && restrictedPaths.includes(card.path)) return false;
+    return true;
+  });
 
   const isRootDashboard = location.pathname.toLowerCase() === "/dashboard";
 

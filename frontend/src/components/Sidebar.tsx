@@ -58,9 +58,15 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { label: 'Settings',          icon: <HiCog6Tooth />,             path: '/dashboard/settings',     roles: ['admin', 'technician', 'user'] },
   ];
 
-  const visibleMenuItems = menuItems.filter(item =>
-    !item.roles || item.roles.includes(user?.role)
-  );
+  // External customer users (role=user, companyCode != ENTCH) are restricted
+  const isExternalUser = user?.role === 'user' && user?.companyCode && user.companyCode !== 'ENTCH';
+  const restrictedPaths = ['/dashboard/equipment', '/dashboard/devices', '/dashboard/customers'];
+
+  const visibleMenuItems = menuItems.filter(item => {
+    if (!item.roles || !item.roles.includes(user?.role)) return false;
+    if (isExternalUser && restrictedPaths.includes(item.path)) return false;
+    return true;
+  });
 
   // Shared aside class: drawer on mobile, static on desktop
   const asideClass = `
