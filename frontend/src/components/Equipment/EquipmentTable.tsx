@@ -286,65 +286,61 @@ const EquipmentTable: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* View Mode Controls */}
-      <div className="flex justify-between items-center">
-        <div className="space-x-2">
-          <button
-            className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-              view === 'all' 
-                ? 'bg-blue-600 text-white border-blue-600' 
-                : 'bg-white border-blue-600 text-blue-600 hover:bg-blue-50'
-            }`}
-            onClick={() => setView('all')}
-          >
-            All Equipment
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-              view === 'instruments' 
-                ? 'bg-blue-600 text-white border-blue-600' 
-                : 'bg-white border-blue-600 text-blue-600 hover:bg-blue-50'
-            }`}
-            onClick={() => setView('instruments')}
-          >
-            Instruments Only
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
-              view === 'probes' 
-                ? 'bg-green-600 text-white border-green-600' 
-                : 'bg-white border-green-600 text-green-600 hover:bg-green-50'
-            }`}
-            onClick={() => setView('probes')}
-          >
-            Probes Only
-          </button>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          className={`px-3 sm:px-4 py-2 rounded-lg border font-medium transition-colors text-sm sm:text-base ${
+            view === 'all'
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white border-blue-600 text-blue-600 hover:bg-blue-50'
+          }`}
+          onClick={() => setView('all')}
+        >
+          All Equipment
+        </button>
+        <button
+          className={`px-3 sm:px-4 py-2 rounded-lg border font-medium transition-colors text-sm sm:text-base ${
+            view === 'instruments'
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white border-blue-600 text-blue-600 hover:bg-blue-50'
+          }`}
+          onClick={() => setView('instruments')}
+        >
+          Instruments
+        </button>
+        <button
+          className={`px-3 sm:px-4 py-2 rounded-lg border font-medium transition-colors text-sm sm:text-base ${
+            view === 'probes'
+              ? 'bg-green-600 text-white border-green-600'
+              : 'bg-white border-green-600 text-green-600 hover:bg-green-50'
+          }`}
+          onClick={() => setView('probes')}
+        >
+          Probes
+        </button>
       </div>
 
       {/* Instruments Table */}
       {(view === 'all' || view === 'instruments') && (
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-blue-700 flex items-center gap-2">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <h2 className="text-lg sm:text-xl font-semibold text-blue-700 flex items-center gap-2">
                 <FaTools />
                 Instruments ({sortedInstruments.length})
               </h2>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Search by model, serial, control no."
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-50 text-sm"
-                  value={instrumentSearchTerm}
-                  onChange={(e) => setInstrumentSearchTerm(e.target.value)}
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Search by model, serial, control no."
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64 text-sm"
+                value={instrumentSearchTerm}
+                onChange={(e) => setInstrumentSearchTerm(e.target.value)}
+              />
             </div>
           </div>
 
           {sortedInstruments.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-blue-500 text-white">
                   <tr>
                     <InstrumentSortableHeader field="instrumentModel">
@@ -449,27 +445,25 @@ const EquipmentTable: React.FC<Props> = ({
       {/* Probes Table */}
       {(view === 'all' || view === 'probes') && (
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-green-700 flex items-center gap-2">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <h2 className="text-lg sm:text-xl font-semibold text-green-700 flex items-center gap-2">
                 <FaFlask />
                 Probes ({sortedProbes.length})
               </h2>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Search by description, serial, control no."
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-50 text-sm"
-                  value={probeSearchTerm}
-                  onChange={(e) => setProbeSearchTerm(e.target.value)}
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="Search by description, serial, control no."
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-full sm:w-64 text-sm"
+                value={probeSearchTerm}
+                onChange={(e) => setProbeSearchTerm(e.target.value)}
+              />
             </div>
           </div>
 
           {sortedProbes.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-blue-500 text-white">
                   <tr>
                     <ProbeSortableHeader field="probeDescription">

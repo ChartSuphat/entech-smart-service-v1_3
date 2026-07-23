@@ -132,17 +132,16 @@ const ToolTable: React.FC<Props> = ({ tools, onEdit, canModify = false }) => {
 
   return (
     <div>
-      {/* Updated search box with your requested placeholder */}
+      {/* Search box */}
       <input
         type="text"
         placeholder="Cert No. or Gas Name"
-        className="border mb-4 px-3 py-2 w-64 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="border mb-4 px-3 py-2 w-full sm:w-64 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {/* Updated table with column separators */}
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-200">
+        <table className="min-w-[600px] w-full bg-white border border-gray-200">
           <thead className="bg-blue-500 text-white">
             <tr>
               {/* Cert No - Sortable */}

@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { HiBars3 } from "react-icons/hi2";
 import api from "../utils/axios";
 
-const Topbar = () => {
+interface TopbarProps {
+  onMenuToggle: () => void;
+}
+
+const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ fullName: string; role: string; avatar?: string; avatarUrl?: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -237,9 +242,22 @@ const handleLogout = async () => {
         : 'bg-white border-gray-200 text-gray-900'
       }`}>
 
-      {/* Left side - Clickable logo on mobile that navigates to dashboard */}
-      <div className="flex items-center space-x-4">
-        {/* Mobile logo - clickable to go to dashboard */}
+      {/* Left side — hamburger + mobile logo */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Hamburger — mobile/tablet only */}
+        <button
+          onClick={onMenuToggle}
+          className={`lg:hidden p-2 rounded-md transition-colors ${
+            theme === 'dark'
+              ? 'text-gray-300 hover:text-white hover:bg-slate-700'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}
+          aria-label="Open menu"
+        >
+          <HiBars3 className="w-6 h-6" />
+        </button>
+
+        {/* Mobile logo */}
         <div className="lg:hidden flex items-center">
           <img
             src="/Logo.png"

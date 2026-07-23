@@ -167,8 +167,8 @@ const CustomerPage = () => {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-blue-600 mb-8">Customers</h1>
+    <div className="p-3 sm:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 mb-4 sm:mb-8">Customers</h1>
 
       <CustomersTable
         customers={customers}

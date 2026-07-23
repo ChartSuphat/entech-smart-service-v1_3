@@ -138,15 +138,14 @@ const ToolsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold text-blue-600 mb-8">
+    <div className="p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-blue-600">
           Gas Cylinders List ({tools.length})
         </h1>
-        {/* Only show Add button if user can modify */}
         {canModify && (
           <button
-            className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-orange-400 text-white px-4 py-2 rounded hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto"
             onClick={handleAddTool}
             disabled={isLoading}
           >

@@ -141,23 +141,23 @@ const CustomersTable: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h2 className="text-xl font-semibold text-blue-700 flex items-center gap-2">
           <FaUsers />
           Customers ({sortedCustomers.length})
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           <input
             type="text"
             placeholder="Search Customer"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 text-sm"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {canModify && (
             <button
               onClick={onAdd}
-              className="bg-orange-400 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors"
+              className="bg-orange-400 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors whitespace-nowrap"
               disabled={isLoading}
             >
               + New Customer

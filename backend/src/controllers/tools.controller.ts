@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import { AuthRequest } from '../middlewares/auth.middleware';
 
 const prisma = new PrismaClient();
 
@@ -137,7 +138,23 @@ export const createTool = async (req: Request, res: Response) => {
 /////// Get All Tools ///////
 export const getTools = async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
+    const userRole = authReq.user?.role;
+    const userCompanyCode = authReq.user?.companyCode;
+
+    // For 'user' role with a specific company: only show gases used in their certs
+    let whereClause: { id?: { in: number[] } } = {};
+    if (userRole === 'user' && userCompanyCode && userCompanyCode !== 'ENTCH') {
+      const certs = await prisma.certificate.findMany({
+        where: { customer: { customerId: userCompanyCode }, toolId: { not: null } },
+        select: { toolId: true }
+      });
+      const toolIds = [...new Set(certs.map(c => c.toolId as number))];
+      whereClause = { id: { in: toolIds.length > 0 ? toolIds : [-1] } };
+    }
+
     const tools = await prisma.toolsManagement.findMany({
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
       orderBy: { createdAt: 'desc' },
       include: { components: true }
     });
