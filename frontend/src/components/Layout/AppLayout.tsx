@@ -20,7 +20,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
         <Topbar onMenuToggle={() => setSidebarOpen(prev => !prev)} />
-        <main className="p-3 sm:p-6 overflow-auto">{children}</main>
+        <main className="p-3 sm:p-6 overflow-y-auto overflow-x-hidden">{children}</main>
       </div>
     </div>
   );
