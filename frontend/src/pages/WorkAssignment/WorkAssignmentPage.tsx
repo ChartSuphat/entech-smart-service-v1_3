@@ -725,11 +725,6 @@ const WorkAssignmentModal = ({
                   value={form.workDays} onChange={e => set('workDays', e.target.value)} />
               </div>
               <div>
-                <label className={lbl}>วันนัดหมาย</label>
-                <input type="date" className={inp}
-                  value={form.appointmentDate} onChange={e => set('appointmentDate', e.target.value)} />
-              </div>
-              <div>
                 <label className={lbl}>เวลา</label>
                 <input type="time" className={inp}
                   value={form.appointmentTime} onChange={e => set('appointmentTime', e.target.value)} />
@@ -861,10 +856,23 @@ const WorkAssignmentPage = () => {
     setSaving(true);
     try {
       const payload = {
-        ...formData,
-        docType: 'work_assignment',
+        customerId: formData.customerId,
+        receivingNo: formData.receivingNo || null,
+        contactName: formData.contactName || null,
+        phone: formData.phone || null,
+        mobile: formData.mobile || null,
+        overrideEmail: formData.overrideEmail || null,
+        certificateAddressEN: formData.certificateAddressEN || null,
+        testDetails: formData.testDetails || null,
+        safetyEquipment: formData.safetyEquipment || null,
+        safetyTraining: formData.safetyTraining ?? null,
+        workplaceType: formData.workplaceType || null,
         staffCount: formData.staffCount ? parseInt(formData.staffCount as any) : null,
         workDays: formData.workDays ? parseInt(formData.workDays as any) : null,
+        appointmentDate: formData.appointmentDate || null,
+        appointmentTime: formData.appointmentTime || null,
+        appointmentPlace: formData.appointmentPlace || null,
+        notes: formData.notes || null,
       };
       if (editData) {
         await api.put(`/work-assignments/${editData.id}`, payload);
@@ -873,8 +881,9 @@ const WorkAssignmentPage = () => {
       }
       setModalOpen(false);
       fetchAssignments();
-    } catch (err) {
-      console.error('Save failed:', err);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+      alert(`บันทึกไม่สำเร็จ: ${msg}`);
     } finally {
       setSaving(false);
     }
