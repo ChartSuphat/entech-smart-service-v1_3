@@ -1,5 +1,5 @@
 import express from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
+import { authMiddleware, requireRole, requireStaff } from '../middlewares/auth.middleware';
 import {
   getWorkAssignments,
   getWorkAssignmentStats,
@@ -14,7 +14,8 @@ import {
 
 const router = express.Router();
 
-router.use(authMiddleware);
+// All work-assignment endpoints are Entech staff only (admin / technician)
+router.use(authMiddleware, requireStaff);
 
 router.get('/stats', getWorkAssignmentStats);
 router.get('/', getWorkAssignments);

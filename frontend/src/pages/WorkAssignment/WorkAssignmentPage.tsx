@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   HiPlus, HiMagnifyingGlass, HiPencilSquare, HiTrash, HiXMark,
   HiClipboardDocumentList, HiDocumentArrowDown, HiChevronDown, HiEye,
@@ -805,9 +806,19 @@ const WorkAssignmentPage = () => {
   const [confirmFinishItem, setConfirmFinishItem] = useState<WorkAssignment | null>(null);
   const [finishing, setFinishing] = useState(false);
 
-  const isAdmin = (() => {
-    try { return JSON.parse(localStorage.getItem('user') || '{}').role === 'admin'; } catch { return false; }
+  const navigate = useNavigate();
+
+  const currentUser = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
   })();
+
+  const isAdmin = currentUser.role === 'admin';
+  const isStaff = currentUser.role === 'admin' || currentUser.role === 'technician';
+
+  // Redirect non-Entech users immediately
+  useEffect(() => {
+    if (!isStaff) navigate('/dashboard', { replace: true });
+  }, []);
 
   const fetchAssignments = async () => {
     setLoading(true);
