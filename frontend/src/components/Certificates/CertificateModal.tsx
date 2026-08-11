@@ -168,6 +168,8 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
   // Tracks which certificate ID was most recently requested — used to discard stale async responses
   const activeCertIdRef = useRef<number | null>(null);
+  // Prevent re-fetching customers/equipment/probes/tools on every modal open
+  const dataLoadedRef = useRef(false);
 
   const [showExpiredGas, setShowExpiredGas] = useState(false);
 
@@ -375,7 +377,6 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
       // Load customers
       const customersData = customersRes.data;
-      console.log('👥 Customers API Response:', customersData);
 
       let customerArray = [];
       if (Array.isArray(customersData)) {
@@ -746,9 +747,12 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
   }, [mode, certificate, filteredProbes, formData.probeId]);
   useEffect(() => {
     if (isOpen) {
-      loadAllData();
-      loadCurrentUserData();
-      loadUserInfo(); // This will now work with your existing API
+      if (!dataLoadedRef.current) {
+        loadAllData();
+        loadCurrentUserData();
+        loadUserInfo();
+        dataLoadedRef.current = true;
+      }
 
       if (mode === 'create') {
         setCurrentStep(1);

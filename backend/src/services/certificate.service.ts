@@ -57,17 +57,22 @@ export class CertificateService {
         skip,
         take: limit,
         include: {
-          equipment: true,
-          probe: true,
-          customer: true,
+          equipment: {
+            select: { id: true, instrumentDescription: true, instrumentModel: true, instrumentSerialNo: true }
+          },
+          probe: {
+            select: { id: true, probeDescription: true, probeModel: true, probeSN: true }
+          },
+          customer: {
+            select: { id: true, companyName: true, customerId: true, contactPerson: true }
+          },
           createdBy: {
-            select: { id: true, fullName: true, email: true, signature: true }
+            select: { id: true, fullName: true, email: true }
           },
           approvedBy: {
-            select: { id: true, fullName: true, email: true, signature: true }
-          },
-          calibrationData: { orderBy: { id: 'asc' } },
-          adjustedData: { orderBy: { id: 'asc' } }
+            select: { id: true, fullName: true, email: true }
+          }
+          // calibrationData and adjustedData intentionally excluded from list — use getCertificateById for detail
         },
         orderBy: {
           createdAt: 'desc'

@@ -66,7 +66,10 @@ const CertificatePage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
-  const [user, setUser] = useState<any>(null);
+  // Initialize from localStorage so canModify is known synchronously — no API waterfall
+  const [user, setUser] = useState<any>(() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  });
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [certTypeFilter, setCertTypeFilter] = useState<'all' | 'gas' | 'biogas' | 'cems'>('all');
@@ -93,9 +96,6 @@ const CertificatePage: React.FC = () => {
   const loadUser = async () => {
     try {
       const response = await api.get('/auth/me');
-      
-      // ✅ Fix: Access response.data first, then check success
-      console.log('User data:', response.data);
       
       if (response.data.success) {
         setUser(response.data.data);  // Get nested user data
@@ -200,8 +200,8 @@ const CertificatePage: React.FC = () => {
   // };
 
   // Effects
-  useEffect(() => { fetchUserInfo(); }, []);
-  useEffect(() => { if (user) fetchAllCertificates(); }, [user, canModify]);
+  // Refresh user from API in background; certificates start immediately since user is already from localStorage
+  useEffect(() => { fetchUserInfo(); fetchAllCertificates(); }, []);
   
   useEffect(() => {
     let processed = allCertificates;
@@ -221,7 +221,7 @@ const CertificatePage: React.FC = () => {
 
     setFilteredCertificates(processed);
     setTotalPages(1);
-  }, [allCertificates, searchTerm, sortConfig, currentPage, certTypeFilter]);
+  }, [allCertificates, searchTerm, sortConfig, certTypeFilter]);
 
   // Handlers
   const handleSort = (field: SortField) => {
