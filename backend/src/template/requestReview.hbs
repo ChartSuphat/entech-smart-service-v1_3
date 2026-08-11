@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ใบทบทวนคำขอ - {{documentNo}}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'TH Sarabun New', 'Sarabun', 'Tahoma', Arial, sans-serif;
+      font-size: 12.5px;
+      color: #000;
+      background: white;
+    }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto;
+      padding: 7mm 10mm 5mm 10mm;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: avoid; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-bottom: 3px;
+    }
+    .logo-wrap { flex: 0 0 auto; width: 115px; }
+    .logo-wrap img { width: 115px; height: auto; display: block; }
+    .title-block { flex: 1; text-align: right; line-height: 1.4; }
+    .form-title { font-size: 14px; font-weight: bold; }
+    .docno-line { font-size: 11.5px; margin-top: 2px; }
+    .divider-blue { border-top: 2px solid #1a3c6e; margin: 3px 0 4px 0; flex-shrink: 0; }
+
+    /* Info grid */
+    .info-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 3px; }
+    .info-tbl td { padding: 1px 3px; vertical-align: bottom; }
+    .lbl { white-space: nowrap; font-weight: bold; }
+    .val { border-bottom: 1px solid #aaa; min-height: 17px; padding-left: 3px; }
+
+    /* Section header */
+    .sec-hd {
+      background: #c0c0c0;
+      font-weight: bold;
+      font-size: 12.5px;
+      padding: 2px 5px;
+      margin-bottom: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Checkboxes */
+    .cb { font-size: 13px; line-height: 1; }
+    .cb-line {
+      display: flex; align-items: center; flex-wrap: wrap;
+      gap: 4px 10px; font-size: 12px; padding: 1px 3px 2px 3px;
+    }
+    .cb-item { display: flex; align-items: center; gap: 2px; }
+
+    /* Instrument rows */
+    .inst-row {
+      display: flex; align-items: flex-end; gap: 4px;
+      font-size: 12px; padding: 1px 3px; margin-bottom: 1px;
+    }
+    .inst-row .v  { flex: 1.4; border-bottom: 1px dotted #666; min-height: 17px; padding-left: 2px; }
+    .inst-row .vs { width: 95px; border-bottom: 1px dotted #666; min-height: 17px; padding-left: 2px; }
+    .inst-row .vn { width: 35px; border-bottom: 1px dotted #666; min-height: 17px; text-align: center; }
+
+    /* Requirement rows */
+    .req-row {
+      display: flex; align-items: flex-end; gap: 3px;
+      font-size: 12px; padding: 1px 3px; margin-bottom: 1px;
+    }
+    .req-row .dotl { flex: 1; border-bottom: 1px dotted #666; min-height: 17px; padding-left: 2px; }
+
+    /* Tables */
+    .tbl {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid #888; font-size: 11.5px; flex-shrink: 0;
+    }
+    .tbl th {
+      background: #e0e0e0; border: 1px solid #888;
+      padding: 2px 4px; text-align: center; font-size: 11.5px;
+    }
+    .tbl td { border: 1px solid #888; padding: 1.5px 4px; vertical-align: middle; }
+    .tbl .cb-cell { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .tbl-val { border-bottom: 1px dotted #666; min-height: 14px; display: block; }
+
+    .body-content { flex: 1; display: flex; flex-direction: column; }
+
+    /* ── PAGE 2 ── */
+    /* Review 2-col */
+    .review-wrap { border: 1px solid #888; flex: 1; display: flex; flex-direction: column; margin-bottom: 4px; }
+    .review-hd-row {
+      display: flex; flex-shrink: 0;
+      border-bottom: 1px solid #888;
+    }
+    .review-col-hd {
+      flex: 1; background: #c0c0c0; font-weight: bold;
+      font-size: 12px; padding: 2px 5px;
+    }
+    .review-col-hd:first-child { border-right: 1px solid #888; }
+    .review-body { display: flex; flex: 1; }
+    .rc { flex: 1; padding: 4px 6px; font-size: 11.5px; display: flex; flex-direction: column; gap: 3px; }
+    .rc:first-child { border-right: 1px solid #888; }
+    .rv-t { font-weight: bold; font-size: 12px; margin-bottom: 1px; }
+    .rv-sub { margin-left: 8px; margin-bottom: 0px; }
+    .rv-cb { display: flex; align-items: flex-start; gap: 2px; margin-left: 8px; margin-bottom: 1px; font-size: 11.5px; }
+    .rv-dotl { border-bottom: 1px dotted #666; min-height: 14px; margin: 1px 0 1px 18px; }
+    .rv-inline { display: flex; gap: 8px; margin-left: 8px; }
+    .rv-note { font-size: 10.5px; color: #444; margin-left: 18px; margin-top: -1px; }
+
+    /* Signature */
+    .sig-section { border-top: 2px solid #1a3c6e; display: flex; flex-shrink: 0; }
+    .sig-cell { flex: 1; text-align: center; padding: 4px 6px; }
+    .sig-cell:first-child { border-right: 1px solid #888; }
+    .sig-role { font-weight: bold; font-size: 12px; color: #1a3c6e; margin-bottom: 2px; }
+    .sig-area {
+      height: 50px; border-bottom: 1px dotted #555;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 2px auto; width: 78%;
+    }
+    .sig-img { max-height: 46px; max-width: 100%; object-fit: contain; display: block; }
+    .sig-bracket { font-size: 11.5px; color: #333; margin-bottom: 2px; }
+    .sig-date { font-size: 11px; color: #444; }
+
+    /* Payment table */
+    .pay-tbl {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid #888; font-size: 11.5px; flex-shrink: 0;
+    }
+    .pay-tbl th { background: #e0e0e0; border: 1px solid #888; padding: 2px 4px; font-size: 11.5px; }
+    .pay-tbl td { border: 1px solid #888; padding: 1.5px 4px; }
+    .pay-val { border-bottom: 1px dotted #666; min-height: 14px; display: inline-block; width: 60%; }
+    .pay-cell { border-bottom: 1px dotted #666; min-height: 14px; }
+
+    .footer-doc { text-align: right; font-size: 10px; color: #bbb; margin-top: 2px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ PAGE 1 ════════════════════ -->
+<div class="page">
+
+  <div class="header">
+    <div class="logo-wrap">
+      {{#if logoBase64}}<img src="{{logoBase64}}" alt="ENTECH">{{else}}<span style="font-size:20px;font-weight:bold;color:#1E88E5;">ENTECH</span>{{/if}}
+    </div>
+    <div class="title-block">
+      <div class="form-title">ใบรับความต้องการฝ่ายบริการและทบทวนคำขอการสอบเทียบ</div>
+      <div class="docno-line">
+        เลขที่เอกสาร : <strong>{{documentNo}}</strong>
+        {{#if receivingNo}}&nbsp;&nbsp;เลขที่ใบรับงาน : <strong>{{receivingNo}}</strong>{{/if}}
+      </div>
+    </div>
+  </div>
+  <div class="divider-blue"></div>
+
+  <div class="body-content">
+
+    <!-- Info fields -->
+    <table class="info-tbl">
+      <tr>
+        <td class="lbl" style="width:72px;">ชื่อบริษัท :</td>
+        <td class="val">{{customerCompany}}</td>
+        <td class="lbl" style="width:36px;text-align:right;">วันที่ :</td>
+        <td class="val" style="width:105px;">{{createdAtFormatted}}</td>
+      </tr>
+      <tr>
+        <td class="lbl">ชื่อลูกค้า :</td>
+        <td class="val" colspan="3">{{contactName}}</td>
+      </tr>
+      <tr>
+        <td class="lbl">โทร :</td>
+        <td class="val" style="width:80px;">{{phone}}</td>
+        <td colspan="2">
+          <div style="display:flex;align-items:flex-end;gap:4px;">
+            <span class="lbl" style="white-space:nowrap;">แฟกซ์ :</span>
+            <span class="val" style="width:65px;"></span>
+            <span class="lbl" style="white-space:nowrap;padding-left:8px;">ผู้รับเรื่อง :</span>
+            <span class="val" style="flex:1;">{{assignedTo}}</span>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="lbl">อีเมล์ :</td>
+        <td class="val" colspan="3">{{contactEmail}}</td>
+      </tr>
+    </table>
+
+    <!-- ผลิตภัณฑ์ -->
+    <div class="sec-hd">ผลิตภัณฑ์</div>
+    <div class="cb-line" style="margin-bottom:2px;">
+      <span class="cb-item"><span class="cb">{{#if rrTesto}}☑{{else}}☐{{/if}}</span>Testo</span>
+      <span class="cb-item"><span class="cb">{{#if rrISC}}☑{{else}}☐{{/if}}</span>ISC</span>
+      <span class="cb-item"><span class="cb">{{#if rrMSA}}☑{{else}}☐{{/if}}</span>MSA</span>
+      <span class="cb-item"><span class="cb">{{#if rrGMI}}☑{{else}}☐{{/if}}</span>GMI</span>
+      <span class="cb-item"><span class="cb">{{#if rrSKC}}☑{{else}}☐{{/if}}</span>SKC</span>
+      <span class="cb-item"><span class="cb">{{#if rrGaemet}}☑{{else}}☐{{/if}}</span>Gasmet</span>
+      <span class="cb-item"><span class="cb">{{#if rrMicronics}}☑{{else}}☐{{/if}}</span>Micronics</span>
+      <span class="cb-item"><span class="cb">{{#if rrGeotech}}☑{{else}}☐{{/if}}</span>Geotech</span>
+      <span class="cb-item"><span class="cb">{{#if rrAccuplus}}☑{{else}}☐{{/if}}</span>Accuplus</span>
+      <span class="cb-item"><span class="cb">{{#if rrAiry}}☑{{else}}☐{{/if}}</span>Airy</span>
+      <span class="cb-item"><span class="cb">{{#if rrBrandOther}}☑{{else}}☐{{/if}}</span>อื่นๆ</span>
+      <span style="flex:1;border-bottom:1px dotted #666;min-height:15px;padding-left:2px;">{{rrBrandOther}}</span>
+    </div>
+    <div class="inst-row">
+      <span style="white-space:nowrap;font-weight:bold;">1) รุ่นของเครื่อง :</span>
+      <span class="v">{{rrModelName}}</span>
+      <span style="white-space:nowrap;">รหัสสินค้า :</span>
+      <span class="vs">{{rrModelProduct}}</span>
+      <span style="white-space:nowrap;">จำนวน :</span>
+      <span class="vn">{{rrModelQty}}</span>
+      <span style="white-space:nowrap;">ชุด</span>
+    </div>
+    <div class="inst-row" style="margin-bottom:3px;">
+      <span style="white-space:nowrap;font-weight:bold;">2) ชนิดเซนเซอร์ :</span>
+      <span class="v">{{rrSensorName}}</span>
+      <span style="white-space:nowrap;">รหัสสินค้า :</span>
+      <span class="vs">{{rrSensorProduct}}</span>
+      <span style="white-space:nowrap;">จำนวน :</span>
+      <span class="vn">{{rrSensorQty}}</span>
+      <span style="white-space:nowrap;">ชุด</span>
+    </div>
+
+    <!-- ความต้องการลูกค้า -->
+    <div class="sec-hd">ความต้องการลูกค้า</div>
+    <div style="padding:1px 3px 3px 3px;">
+      <div class="req-row"><span class="cb">{{#if rrQuotation}}☑{{else}}☐{{/if}}</span><span style="white-space:nowrap;">ขอราคาอะไหล่</span><span class="dotl">{{rrQuotationNote}}</span></div>
+      <div class="req-row"><span class="cb">{{#if rrCalibration}}☑{{else}}☐{{/if}}</span><span style="white-space:nowrap;">ซ่อม</span><span class="dotl">{{rrCalibrationNote}}</span></div>
+      <div class="req-row"><span class="cb">{{#if rrAcceptQuote}}☑{{else}}☐{{/if}}</span><span style="white-space:nowrap;">สอบเทียบ</span><span class="dotl">{{rrAcceptQuoteNote}}</span></div>
+      <div class="req-row"><span class="cb">{{#if rrVerify}}☑{{else}}☐{{/if}}</span><span style="white-space:nowrap;">งานเช่า</span><span class="dotl">{{rrVerifyNote}}</span></div>
+      <div class="req-row"><span class="cb">{{#if rrRepair}}☑{{else}}☐{{/if}}</span><span style="white-space:nowrap;">บริการอื่นๆ</span><span class="dotl">{{rrRepairNote}}</span></div>
+    </div>
+
+    <!-- สถานะการดำเนินการ -->
+    <table class="tbl" style="margin-bottom:3px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:5px;width:56%;">สถานะการดำเนินการ — การดำเนินการ</th>
+          <th style="width:22%;">เลขที่อ้างอิง</th>
+          <th style="width:22%;">สถานะปัจจุบัน</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="cb">{{#if rrStPickup}}☑{{else}}☐{{/if}}</span> นัดรับเครื่อง/นัดหมายเข้าไปหน้างาน</td>
+          <td><span class="tbl-val">{{rrStPickupRef}}</span></td>
+          <td><span class="tbl-val">{{rrStPickupStatus}}</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div><span class="cb">{{#if rrStLocalCheck}}☑{{else}}☐{{/if}}</span> ตรวจเช็คในประเทศ (+3 วัน)</div>
+            <div><span class="cb">{{#if rrStForeignCheck}}☑{{else}}☐{{/if}}</span> ตรวจเช็คต่างประเทศ (+15 วัน)</div>
+          </td>
+          <td><span class="tbl-val">{{rrStCheckRef}}</span></td>
+          <td><span class="tbl-val">{{rrStCheckStatus}}</span></td>
+        </tr>
+        <tr>
+          <td><span class="cb">{{#if rrStQuoting}}☑{{else}}☐{{/if}}</span> เสนอราคาแล้วรออนุมัติ</td>
+          <td><span class="tbl-val">{{rrStQuotingRef}}</span></td>
+          <td><span class="tbl-val">{{rrStQuotingStatus}}</span></td>
+        </tr>
+        <tr>
+          <td><span class="cb">{{#if rrStRepairing}}☑{{else}}☐{{/if}}</span> อยู่ระหว่างซ่อม/สอบเทียบ</td>
+          <td><span class="tbl-val">{{rrStRepairingRef}}</span></td>
+          <td><span class="tbl-val">{{rrStRepairingStatus}}</span></td>
+        </tr>
+        <tr>
+          <td><span class="cb">{{#if rrStDelivered}}☑{{else}}☐{{/if}}</span> ส่งมอบสินค้า</td>
+          <td><span class="tbl-val">{{rrStDeliveredRef}}</span></td>
+          <td><span class="tbl-val">{{rrStDeliveredStatus}}</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- การตรวจสอบเครื่องมือก่อนการส่งมอบ -->
+    <table class="tbl" style="margin-bottom:3px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:5px;width:38%;">การตรวจสอบเครื่องมือก่อนการส่งมอบ — รายการที่ตรวจเช็ค</th>
+          <th>สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. เครื่องมือทั่วไป</td>
+          <td><div class="cb-cell"><span class="cb-item"><span class="cb">{{#if rrCkToolOk}}☑{{else}}☐{{/if}}</span>เครื่องใช้งานได้ปกติ</span><span class="cb-item"><span class="cb">{{#if rrCkToolBad}}☑{{else}}☐{{/if}}</span>เครื่องผิดปกติ</span></div></td>
+        </tr>
+        <tr>
+          <td>2. ความครบถ้วนอุปกรณ์</td>
+          <td><div class="cb-cell"><span class="cb-item"><span class="cb">{{#if rrCkEquipOk}}☑{{else}}☐{{/if}}</span>ครบ</span><span class="cb-item"><span class="cb">{{#if rrCkEquipBad}}☑{{else}}☐{{/if}}</span>ไม่ครบ</span></div></td>
+        </tr>
+        <tr>
+          <td>3. ใบ Certificate</td>
+          <td><div class="cb-cell"><span class="cb-item"><span class="cb">{{#if rrCkCertYes}}☑{{else}}☐{{/if}}</span>มี</span><span class="cb-item"><span class="cb">{{#if rrCkCertNo}}☑{{else}}☐{{/if}}</span>ไม่มี</span></div></td>
+        </tr>
+        <tr>
+          <td>4. ใบ Test Report</td>
+          <td><div class="cb-cell"><span class="cb-item"><span class="cb">{{#if rrCkReportYes}}☑{{else}}☐{{/if}}</span>มี</span><span class="cb-item"><span class="cb">{{#if rrCkReportNo}}☑{{else}}☐{{/if}}</span>ไม่มี</span></div></td>
+        </tr>
+        <tr>
+          <td>5. ใบรายงานอายุ Sensor</td>
+          <td><div class="cb-cell"><span class="cb-item"><span class="cb">{{#if rrCkSensorYes}}☑{{else}}☐{{/if}}</span>มี</span><span class="cb-item"><span class="cb">{{#if rrCkSensorNo}}☑{{else}}☐{{/if}}</span>ไม่มี</span></div></td>
+        </tr>
+        <tr>
+          <td>6. จัดส่งโดย</td>
+          <td><div class="cb-cell"><span class="cb-item"><span class="cb">{{#if rrCkDelivEntech}}☑{{else}}☐{{/if}}</span>ENTECH</span><span class="cb-item"><span class="cb">{{#if rrCkDelivCompany}}☑{{else}}☐{{/if}}</span>บริษัทขนส่ง</span><span class="cb-item"><span class="cb">{{#if rrCkDelivPost}}☑{{else}}☐{{/if}}</span>ไปรษณีย์</span></div></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer info -->
+    <div style="display:flex;align-items:flex-end;gap:5px;font-size:12px;margin-bottom:2px;">
+      <span style="font-weight:bold;white-space:nowrap;">หมายเหตุ :</span>
+      <span style="flex:1;border-bottom:1px dotted #666;min-height:17px;">{{notes}}</span>
+    </div>
+    <div style="display:flex;gap:10px;font-size:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="display:flex;align-items:flex-end;gap:3px;">
+        <span style="font-weight:bold;white-space:nowrap;">วันที่ส่งสินค้า :</span>
+        <span style="border-bottom:1px dotted #666;min-height:17px;width:80px;">{{rrDelivDate}}</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:3px;flex:1;">
+        <span style="font-weight:bold;white-space:nowrap;">ตรวจสอบโดย :</span>
+        <span style="flex:1;border-bottom:1px dotted #666;min-height:17px;">{{rrCheckedBy}}</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:3px;">
+        <span style="font-weight:bold;white-space:nowrap;">วันที่ตรวจเช็ค :</span>
+        <span style="border-bottom:1px dotted #666;min-height:17px;width:80px;">{{rrCheckDate}}</span>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer-doc">FM-CAL-006-01 &nbsp; หน้า 1/2</div>
+</div>
+
+
+<!-- ════════════════════ PAGE 2 ════════════════════ -->
+<div class="page">
+
+  <div class="header">
+    <div class="logo-wrap">
+      {{#if logoBase64}}<img src="{{logoBase64}}" alt="ENTECH">{{else}}<span style="font-size:20px;font-weight:bold;color:#1E88E5;">ENTECH</span>{{/if}}
+    </div>
+    <div class="title-block">
+      <div class="form-title">ใบรับความต้องการฝ่ายบริการและทบทวนคำขอการสอบเทียบ</div>
+      <div class="docno-line">
+        เลขที่เอกสาร : <strong>{{documentNo}}</strong>
+        {{#if receivingNo}}&nbsp;&nbsp;เลขที่ใบรับงาน : <strong>{{receivingNo}}</strong>{{/if}}
+      </div>
+    </div>
+  </div>
+  <div class="divider-blue"></div>
+
+  <div class="body-content">
+
+    <!-- การทบทวนคำขอรับบริการสอบเทียบ -->
+    <div class="review-wrap">
+      <div class="review-hd-row">
+        <div class="review-col-hd">ความต้องการลูกค้า</div>
+        <div class="review-col-hd">การทบทวนคำขอรับบริการสอบเทียบ</div>
+      </div>
+      <div class="review-body">
+
+        <!-- Left: items 1-3 -->
+        <div class="rc">
+          <!-- 1 -->
+          <div>
+            <div class="rv-t">1. วิธีการสอบเทียบที่ต้องการ (โปรดระบุ)</div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev11}}☑{{else}}☐{{/if}}</span><span>1.1 วิธีการของห้องปฏิบัติการสอบเทียบ</span></div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev12}}☑{{else}}☐{{/if}}</span>
+              <span>1.2 วิธีเฉพาะตามที่ลูกค้าระบุ</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;margin-left:3px;">{{rrRev12Text}}</span>
+            </div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev13}}☑{{else}}☐{{/if}}</span><span>1.3 ใบรายงานผลการสอบเทียบ (Calibration Certificate)</span></div>
+            <div class="rv-cb" style="margin-left:18px;"><span class="cb">{{#if rrRev13ISO}}☑{{else}}☐{{/if}}</span><span>ต้องการ ISO/IEC17025</span></div>
+            <div class="rv-cb" style="margin-left:18px;"><span class="cb">{{#if rrRev13NoISO}}☑{{else}}☐{{/if}}</span><span>ไม่ต้องการ ISO/IEC17025</span></div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev14}}☑{{else}}☐{{/if}}</span><span>1.4 Test Report</span></div>
+          </div>
+
+          <!-- 2 -->
+          <div>
+            <div class="rv-t">2. ระยะเวลาในการออกผลการสอบเทียบ</div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev21}}☑{{else}}☐{{/if}}</span><span>2.1 ภายใน 1 วัน (Fast track มีค่าใช้จ่ายเพิ่มเติม)</span></div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev22}}☑{{else}}☐{{/if}}</span><span>2.2 ภายใน 7 วัน หลังจากทำการสอบเทียบ</span></div>
+            <div style="display:flex;align-items:flex-end;gap:3px;margin-left:8px;font-size:11.5px;">
+              <span class="cb">{{#if rrRev23}}☑{{else}}☐{{/if}}</span><span>2.2 ระบุ</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;">{{rrRev23Text}}</span>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div>
+            <div class="rv-t">3. ความต้องการลูกค้าเกี่ยวกับบริการด้านอื่นๆ เพิ่มเติม</div>
+            <div style="display:flex;align-items:flex-end;gap:3px;margin-left:8px;font-size:11.5px;margin-bottom:2px;">
+              <span style="white-space:nowrap;">3.1 เกณฑ์การยอมรับ</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;">{{rrRev31Text}}</span>
+            </div>
+            <div class="rv-sub">3.2 การปรับเทียบเครื่องมือ</div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev32Yes}}☑{{else}}☐{{/if}}</span><span>ต้องการ</span></div>
+            <div class="rv-note">*ขอให้ลูกค้าแนบคู่มือการใช้งาน / Software สำหรับปรับเทียบมาด้วย</div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev32No}}☑{{else}}☐{{/if}}</span><span>ไม่ต้องการ</span></div>
+            <div class="rv-sub" style="margin-top:2px;">3.3 ลูกค้าต้องการให้กำหนดรอบการสอบเทียบในครั้งถัดไปหรือไม่</div>
+            <div class="rv-inline">
+              <span style="display:flex;align-items:center;gap:2px;"><span class="cb">{{#if rrRev33Yes}}☑{{else}}☐{{/if}}</span>ต้องการ</span>
+              <span style="display:flex;align-items:center;gap:2px;"><span class="cb">{{#if rrRev33No}}☑{{else}}☐{{/if}}</span>ไม่ต้องการ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: items 4-7 -->
+        <div class="rc">
+          <!-- 4 -->
+          <div>
+            <div class="rv-t">4. กรณีลูกค้าระบุวิธีการสอบเทียบ ในข้อ 1.2 พิจารณาแล้วว่า</div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev41}}☑{{else}}☐{{/if}}</span><span>4.1 เหมาะสมและสามารถทำได้</span></div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev42}}☑{{else}}☐{{/if}}</span><span>4.2 ไม่เหมาะสม หรือไม่สามารถทำได้</span></div>
+          </div>
+
+          <!-- 5 -->
+          <div>
+            <div class="rv-t">5. ความพร้อมของเครื่องมือที่ใช้ในการสอบเทียบ</div>
+            <div class="rv-inline">
+              <span style="display:flex;align-items:center;gap:2px;"><span class="cb">{{#if rrRev51}}☑{{else}}☐{{/if}}</span>5.1 มีความพร้อม</span>
+              <span style="display:flex;align-items:center;gap:2px;"><span class="cb">{{#if rrRev52}}☑{{else}}☐{{/if}}</span>5.2 ไม่มีความพร้อม</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:3px;margin-left:8px;font-size:11.5px;margin-top:1px;">
+              <span style="white-space:nowrap;">เนื่องจาก</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;">{{rrRev5Reason}}</span>
+            </div>
+            <div class="rv-dotl"></div>
+          </div>
+
+          <!-- 6 -->
+          <div>
+            <div class="rv-t">6. ความพร้อมของบุคลากรที่ทำการสอบเทียบ</div>
+            <div class="rv-inline">
+              <span style="display:flex;align-items:center;gap:2px;"><span class="cb">{{#if rrRev61}}☑{{else}}☐{{/if}}</span>6.1 สามารถทำได้</span>
+              <span style="display:flex;align-items:center;gap:2px;"><span class="cb">{{#if rrRev62}}☑{{else}}☐{{/if}}</span>6.2 ไม่สามารถทำได้</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:3px;margin-left:8px;font-size:11.5px;margin-top:1px;">
+              <span style="white-space:nowrap;">เนื่องจาก</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;">{{rrRev6Reason}}</span>
+            </div>
+            <div class="rv-dotl"></div>
+          </div>
+
+          <!-- 7 -->
+          <div>
+            <div class="rv-t">7. สรุปความพร้อมในการรับงานสอบเทียบ</div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev71}}☑{{else}}☐{{/if}}</span><span>7.1 พร้อมรับงานได้ และออกผลได้ตามที่ระบุ ในข้อ 2</span></div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev72}}☑{{else}}☐{{/if}}</span>
+              <span>7.2 ไม่พร้อมรับงาน เนื่องจาก</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;margin-left:3px;">{{rrRev72Reason}}</span>
+            </div>
+            <div class="rv-dotl"></div>
+            <div class="rv-cb"><span class="cb">{{#if rrRev73}}☑{{else}}☐{{/if}}</span><span>7.3 จำเป็นต้องดำเนินการส่งสอบเทียบต่อยังหน่วยงานภายนอก</span></div>
+            <div style="display:flex;align-items:flex-end;gap:3px;margin-left:18px;font-size:11px;">
+              <span style="white-space:nowrap;">ระบุรายการสอบเทียบ</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;">{{rrRev73Items}}</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:3px;margin-left:18px;font-size:11px;margin-top:1px;">
+              <span style="white-space:nowrap;">หน่วยงานที่ส่งต่อ</span>
+              <span style="flex:1;border-bottom:1px dotted #666;min-height:13px;">{{rrRev73Agency}}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="sig-section">
+      <div class="sig-cell">
+        <div class="sig-role">ลงนามส่วนลูกค้า / พนักงานขาย</div>
+        <div class="sig-area">
+          {{#if assignedToSig}}<img src="{{assignedToSig}}" class="sig-img" />{{/if}}
+        </div>
+        <div class="sig-bracket">
+          {{#if assignedTo}}({{assignedTo}}){{else}}(.................................................){{/if}}
+        </div>
+        <div class="sig-date">
+          {{#if assignedToSignedAt}}{{assignedToSignedAt}}{{else}}……../………/………{{/if}}
+        </div>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-role">ลงนามสำหรับผู้จัดการด้านเทคนิค / ผู้ได้รับมอบหมาย</div>
+        <div class="sig-area">
+          {{#if reviewedBySig}}<img src="{{reviewedBySig}}" class="sig-img" />{{/if}}
+        </div>
+        <div class="sig-bracket">
+          {{#if reviewedBy}}({{reviewedBy}}){{else}}(.................................................){{/if}}
+        </div>
+        <div class="sig-date">
+          {{#if reviewedBySignedAt}}{{reviewedBySignedAt}}{{else}}……../………/………{{/if}}
+        </div>
+      </div>
+    </div>
+
+    <!-- รายละเอียดการสั่งขาย -->
+    <table class="pay-tbl">
+      <thead>
+        <tr>
+          <th colspan="3" style="text-align:left;padding-left:6px;font-size:12px;">รายละเอียดการสั่งขาย</th>
+        </tr>
+        <tr>
+          <th style="width:55%;text-align:left;padding-left:6px;">รายการ</th>
+          <th style="width:22%;">วันที่บันทึก</th>
+          <th style="width:23%;">ผู้บันทึก</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="3" style="font-weight:bold;padding-left:5px;">1. ได้รับการอนุมัติสั่งซื้อ</td>
+        </tr>
+        <tr>
+          <td style="padding-left:14px;">
+            <div style="display:flex;align-items:flex-end;gap:3px;font-size:11.5px;margin-bottom:2px;">
+              <span class="cb">{{#if rrSoPO}}☑{{else}}☐{{/if}}</span>
+              <span style="white-space:nowrap;">1.1 PO No.</span>
+              <span class="pay-val">{{rrSoPONo}}</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:3px;font-size:11.5px;">
+              <span class="cb">{{#if rrSoQuote}}☑{{else}}☐{{/if}}</span>
+              <span style="white-space:nowrap;">1.2 อนุมัติตามใบเสนอราคาเลขที่</span>
+              <span class="pay-val">{{rrSoQuoteNo}}</span>
+            </div>
+          </td>
+          <td><span class="pay-cell"></span></td>
+          <td><span class="pay-cell"></span></td>
+        </tr>
+        <tr>
+          <td>
+            <div style="display:flex;align-items:flex-end;gap:3px;font-size:11.5px;">
+              <span style="font-weight:bold;white-space:nowrap;">2. ใบสั่งขาย (Sale Order) เลขที่</span>
+              <span class="pay-val">{{rrSoSaleOrderNo}}</span>
+            </div>
+          </td>
+          <td><span class="pay-cell"></span></td>
+          <td><span class="pay-cell"></span></td>
+        </tr>
+        <tr>
+          <td>
+            <div style="display:flex;align-items:flex-end;gap:3px;font-size:11.5px;">
+              <span style="font-weight:bold;white-space:nowrap;">3. ใบขอซื้อ (PR) เลขที่</span>
+              <span class="pay-val">{{rrSoPRNo}}</span>
+            </div>
+            <div style="font-size:10.5px;color:#555;padding-top:1px;">(กรณี งานที่ต้องสั่งซื้ออะไหล่ หรือก๊าซสอบเทียบพิเศษ)</div>
+          </td>
+          <td><span class="pay-cell"></span></td>
+          <td><span class="pay-cell"></span></td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+  <div class="footer-doc">FM-CAL-006-01 &nbsp; หน้า 2/2</div>
+</div>
+
+</body>
+</html>

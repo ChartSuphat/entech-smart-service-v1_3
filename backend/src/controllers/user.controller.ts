@@ -336,6 +336,60 @@ export const deleteUserSignature = async (req: any, res: Response) => {
   }
 };
 
+// Get current user's signature as base64 (for embedding in PDFs)
+export const getUserSignatureBase64 = async (req: any, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, signature: true }
+    });
+
+    const uploadsDir = process.env.UPLOAD_PATH || path.join(process.cwd(), 'uploads');
+    const sigDir = path.join(uploadsDir, 'signatures');
+
+    // Try multiple path candidates in order
+    let sigPath: string | null = null;
+
+    if (user?.signature) {
+      const sig = user.signature;
+      const candidates = [
+        path.join(sigDir, sig),                          // stored as full filename
+        path.join(sigDir, path.basename(sig)),           // stored as /uploads/... full path
+        path.join(sigDir, `sig-${userId}-${sig}`),       // stored as timestamp only
+      ];
+      for (const c of candidates) {
+        if (fs.existsSync(c)) { sigPath = c; break; }
+      }
+    }
+
+    // Fallback: scan directory for any file matching this userId
+    if (!sigPath && fs.existsSync(sigDir)) {
+      const files = fs.readdirSync(sigDir)
+        .filter(f => f.startsWith(`sig-${userId}-`))
+        .sort()
+        .reverse(); // newest first
+      if (files.length > 0) sigPath = path.join(sigDir, files[0]);
+    }
+
+    if (!sigPath) {
+      return res.json({ success: true, data: { fullName: user?.fullName || '', signatureBase64: null } });
+    }
+
+    const buf = fs.readFileSync(sigPath);
+    const ext = (path.extname(sigPath).replace('.', '') || 'png').toLowerCase();
+    const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+    const signatureBase64 = `data:${mimeType};base64,${buf.toString('base64')}`;
+
+    res.json({ success: true, data: { fullName: user?.fullName || '', signatureBase64 } });
+  } catch (error: any) {
+    console.error('Error getting signature base64:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Change Password
 export const changePassword = async (req: any, res: Response) => {
   try {

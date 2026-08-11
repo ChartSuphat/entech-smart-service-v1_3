@@ -16,6 +16,7 @@ import deviceRoutes from './routes/device.routes';
 import userRoutes from './routes/user.routes';
 import equipmentRoutes from './routes/equipment.routes';
 import devRoutes from './routes/dev.routes';
+import workAssignmentRoutes from './routes/workAssignment.routes';
 
 // 🔥 LOAD ENVIRONMENT VARIABLES FIRST - Before any other imports
 const envFile = process.env.NODE_ENV === 'production' 
@@ -82,6 +83,7 @@ app.use('/api/printer', printerRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/work-assignments', workAssignmentRoutes);
 // Secondary routes without /api prefix (for frontend compatibility)
 app.use('/auth', authRoutes);
 app.use('/certificates', certificateRoutes);
@@ -93,6 +95,7 @@ app.use('/printer', printerRoutes);
 app.use('/users', userRoutes);
 app.use('/equipment', equipmentRoutes);
 app.use('/devices', deviceRoutes);
+app.use('/work-assignments', workAssignmentRoutes);
 // For test my cert layout (only in development)
 if (process.env.NODE_ENV !== 'production') {
   app.use('/dev', devRoutes);

@@ -7,6 +7,7 @@ import {
   HiCog6Tooth,
   HiUserGroup,
   HiXMark,
+  HiClipboardDocumentList,
 } from "react-icons/hi2";
 import { BsFillDeviceSsdFill } from "react-icons/bs";
 import { TbScubaDivingTankFilled } from "react-icons/tb";
@@ -22,6 +23,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [approvedCount, setApprovedCount] = useState(0);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") || "light";
@@ -47,9 +49,22 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    const fetchBadge = async () => {
+      try {
+        const res = await api.get('/work-assignments/stats');
+        setApprovedCount(res.data.data?.approved ?? 0);
+      } catch {}
+    };
+    fetchBadge();
+    const timer = setInterval(fetchBadge, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   const menuItems = [
     { label: 'Dashboard',         icon: <FaTachometerAlt />,         path: '/dashboard',              roles: ['admin', 'technician', 'user'] },
-    { label: 'Certificates',      icon: <HiDocumentText />,          path: '/dashboard/certificates', roles: ['admin', 'technician', 'user'] },
+    { label: 'Certificates',      icon: <HiDocumentText />,          path: '/dashboard/certificates',     roles: ['admin', 'technician', 'user'] },
+    { label: 'Work Assignment',   icon: <HiClipboardDocumentList />, path: '/dashboard/work-assignments', roles: ['admin', 'technician'] },
     { label: 'Equipment',         icon: <HiWrenchScrewdriver />,     path: '/dashboard/equipment',    roles: ['admin', 'technician'] },
     { label: 'Standard Gas',      icon: <TbScubaDivingTankFilled />, path: '/dashboard/tools',        roles: ['admin', 'technician', 'user'] },
     { label: 'Reference Devices', icon: <BsFillDeviceSsdFill />,     path: '/dashboard/devices',      roles: ['admin', 'technician'] },
@@ -135,8 +150,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                                        : 'text-gray-700 hover:bg-blue-200 hover:text-blue-700'
                   }`}
               >
-                <span className="text-lg transition-transform duration-200 ease-out group-hover:scale-110">
+                <span className="relative text-lg transition-transform duration-200 ease-out group-hover:scale-110">
                   {item.icon}
+                  {item.label === 'Work Assignment' && approvedCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                      {approvedCount > 99 ? '99+' : approvedCount}
+                    </span>
+                  )}
                 </span>
                 <span className="transition-transform duration-200 ease-out group-hover:scale-105">
                   {item.label}

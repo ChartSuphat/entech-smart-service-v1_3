@@ -21,10 +21,11 @@ model User {
   avatar               String?
   signature            String?
   companyCode          String?
-  certificatesApproved Certificate[] @relation("ApprovedCertificates")
-  certificatesCreated  Certificate[] @relation("CreatedCertificates")
-  equipmentCreated     Equipment[]   @relation("CreatedEquipment")
-  probesCreated        Probe[]       @relation("CreatedProbes")
+  certificatesApproved Certificate[]    @relation("ApprovedCertificates")
+  certificatesCreated  Certificate[]    @relation("CreatedCertificates")
+  equipmentCreated     Equipment[]      @relation("CreatedEquipment")
+  probesCreated        Probe[]          @relation("CreatedProbes")
+  workAssignments      WorkAssignment[] @relation("CreatedWorkAssignments")
 
   @@map("users")
 }
@@ -41,7 +42,8 @@ model Customer {
   phone         String
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  certificates  Certificate[]
+  certificates    Certificate[]
+  workAssignments WorkAssignment[]
 
   @@map("customers")
 }
@@ -289,4 +291,77 @@ enum CertificateStatus {
 enum InstrumentDescription {
   GAS_DETECTOR @map("Gas Detector")
   GAS_ANALYZER @map("Gas Analyzer")
+}
+
+enum WorkAssignDocType {
+  work_assignment
+  request_review
+}
+
+enum WorkAssignStatus {
+  newjob
+  approved
+  inprogress
+  jobdone
+}
+
+model WorkAssignment {
+  id                   Int               @id @default(autoincrement())
+  documentNo           String            @unique
+  receivingNo          String?
+  docType              WorkAssignDocType @default(work_assignment)
+  status               WorkAssignStatus  @default(newjob)
+
+  // Customer
+  customerId           String
+  customer             Customer          @relation(fields: [customerId], references: [id])
+  contactName          String?
+  phone                String?
+  mobile               String?
+  overrideEmail        String?
+  certificateAddressEN String?
+
+  // Content
+  title                String?
+  testDetails          String?
+  notes                String?
+
+  // Safety (JSON: { shoes, helmet, glasses, otherText })
+  safetyEquipment      Json?
+  // true = required, false = not required
+  safetyTraining       Boolean?
+
+  // Workplace (JSON: { indoor, production, lab, indoorOther, outdoor, outdoorPipeline, outdoorHazardous, outdoorOther })
+  workplaceType        Json?
+
+  // Scheduling
+  staffCount           Int?
+  workDays             Int?
+  appointmentDate      DateTime?
+  appointmentTime      String?
+  appointmentPlace     String?
+
+  // Signatories
+  assignedTo           String?
+  assignedToSig        String?
+  assignedToSignedAt   DateTime?
+  reviewedBy           String?
+  reviewedBySig        String?
+  reviewedBySignedAt   DateTime?
+  receivedBy           String?
+  receivedBySig        String?
+  receivedBySignedAt   DateTime?
+  dueDate              DateTime?
+
+  createdById          Int
+  createdBy            User              @relation("CreatedWorkAssignments", fields: [createdById], references: [id])
+
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([documentNo])
+  @@index([status])
+  @@index([customerId])
+  @@index([docType])
+  @@map("work_assignments")
 }

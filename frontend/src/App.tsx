@@ -10,6 +10,7 @@ import DevicesPage from "./pages/Devices/Devicepage"; // ✅ ADD THIS IMPORT
 import Setting from "./pages/Setting";
 import Modal from 'react-modal';
 import AdminUserManagement from './pages/AdminUserManagement/AdminUserManagement';
+import WorkAssignmentPage from './pages/WorkAssignment/WorkAssignmentPage';
 
 Modal.setAppElement('#root');
 
@@ -30,6 +31,7 @@ export default function AppRoutes() {
         <Route path="devices" element={<DevicesPage />} />
         <Route path="settings" element={<Setting />} />
         <Route path="admin/users" element={<AdminUserManagement />} />
+        <Route path="work-assignments" element={<WorkAssignmentPage />} />
       </Route>
     </Routes>
   );

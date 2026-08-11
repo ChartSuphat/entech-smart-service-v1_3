@@ -129,7 +129,7 @@ export class CertificateTemplateService {
       }
 
       // Process calibration data with gasUnit from tool
-      const gasUnit = (certificate.tool?.gasUnit && certificate.tool.gasUnit !== 'N/A') ? certificate.tool.gasUnit : 'ppm';
+      const gasUnit = (certificate.tool?.gasUnit && certificate.tool.gasUnit.toUpperCase() !== 'N/A') ? certificate.tool.gasUnit : 'ppm';
       const processedCalibrationData = this.padToMinRows(this.processCalibrationData(certificate.calibrationData, gasUnit));
       const processedAdjustedData = certificate.adjustedData && certificate.adjustedData.length > 0 ?
         this.padToMinRows(this.processCalibrationData(certificate.adjustedData, gasUnit)) : [];
@@ -241,7 +241,7 @@ if (certificate.approvedBy?.signature) {
 
       return {
         ...data,
-        gasUnit: (data.gasUnit && data.gasUnit !== 'N/A') ? data.gasUnit : gasUnit,
+        gasUnit: (data.gasUnit && data.gasUnit.toUpperCase() !== 'N/A') ? data.gasUnit : gasUnit,
         meanValue: Number(meanValue.toFixed(2)),
         error: Number(error.toFixed(2)),
         repeatability: Number(repeatability.toFixed(1)),
@@ -318,7 +318,7 @@ if (certificate.approvedBy?.signature) {
         const refNo = row.referenceNo || tool?.certificateNumber || 'N/A';
         const vendor = row.vendor || tool?.vendorName || 'N/A';
         const dueDate = row.certDueDate || (tool?.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : 'N/A');
-        const gasUnit = row.gasUnit || 'ppm';
+        const gasUnit = (row.gasUnit && row.gasUnit.toUpperCase() !== 'N/A') ? row.gasUnit : 'ppm';
         const standard = `${row.gasType} ${row.standardValue} ${gasUnit}`;
 
         if (!seen.has(refNo)) seen.set(refNo, []);
@@ -338,12 +338,12 @@ if (certificate.approvedBy?.signature) {
 
     // Fallback: single tool
     if (tool) {
-      const gasUnit = tool.gasUnit || 'ppm';
+      const gasUnit = (tool.gasUnit && tool.gasUnit.toUpperCase() !== 'N/A') ? tool.gasUnit : 'ppm';
       const dueDate = tool.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : 'N/A';
       let refs: StandardReference[];
       if (tool.isMixGas && tool.components?.length) {
         refs = tool.components.map((c: any) => ({
-          standard: `${c.gasName} ${c.concentration} ${c.gasUnit || gasUnit}`,
+          standard: `${c.gasName} ${c.concentration} ${(c.gasUnit && c.gasUnit.toUpperCase() !== 'N/A') ? c.gasUnit : gasUnit}`,
           gasUnit: '',
           referenceNo: tool.certificateNumber || 'N/A',
           vendor: tool.vendorName || 'N/A',
@@ -439,7 +439,7 @@ if (certificate.approvedBy?.signature) {
     let parameterOfCalibration = 'Gas Calibration';
 
     const resolveUnit = (unit: string | null | undefined): string =>
-      unit && unit !== 'N/A' && unit.trim() !== '' ? unit.trim() : 'ppm';
+      unit && unit.toUpperCase() !== 'N/A' && unit.trim() !== '' ? unit.trim() : 'ppm';
 
     const parts: string[] = [];
 

@@ -7,6 +7,7 @@ import {
   updateFullName,
   deleteUserAvatar,
   deleteUserSignature,
+  getUserSignatureBase64,
   changePassword,
   adminResetPassword,
   getAllUsers,
@@ -42,6 +43,9 @@ router.delete('/profile/avatar', authMiddleware, deleteUserAvatar);
 
 // Delete signature
 router.delete('/profile/signature', authMiddleware, deleteUserSignature);
+
+// Get signature as base64 (for PDF embedding)
+router.get('/me/signature', authMiddleware, getUserSignatureBase64);
 
 // ========================================
 // ADMIN USER MANAGEMENT ROUTES

@@ -6,6 +6,7 @@ import {
   HiUser,
   HiCog6Tooth,
   HiUserGroup,
+  HiClipboardDocumentList,
 } from "react-icons/hi2";
 import { BsFillDeviceSsdFill } from "react-icons/bs";
 import { TbScubaDivingTankFilled } from "react-icons/tb";
@@ -45,7 +46,13 @@ useEffect(() => {
       icon: <HiDocumentText size={86} />,
       label: "Certificates",
       path: "/dashboard/certificates",
-      roles: ['admin', 'technician', 'user'], // All users
+      roles: ['admin', 'technician', 'user'],
+    },
+    {
+      icon: <HiClipboardDocumentList size={86} />,
+      label: "Work Assignment",
+      path: "/dashboard/work-assignments",
+      roles: ['admin', 'technician'],
     },
     {
       icon: <HiWrenchScrewdriver size={86} />,
