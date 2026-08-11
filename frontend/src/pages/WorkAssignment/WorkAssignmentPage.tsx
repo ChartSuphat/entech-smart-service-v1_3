@@ -76,6 +76,7 @@ interface WorkAssignment {
   notes?: string;
   createdBy: { fullName: string };
   createdAt: string;
+  updatedAt: string;
 }
 
 const STATUS_LABEL: Record<DocStatus, string> = {
@@ -94,13 +95,13 @@ const REMARK_TEXT: Record<DocStatus, string> = {
   newjob:    'รอผู้อนุมัติพิจารณา',
   approved:  'รออนุมัติรับมอบงาน',
   inprogress: 'กำลังดำเนินการ',
-  jobdone:   '',
+  jobdone:   'ปิดงานแล้ว',
 };
 const REMARK_CLASS: Record<DocStatus, string> = {
   newjob:    'bg-yellow-50 text-yellow-700',
   approved:  'bg-blue-50 text-blue-700',
   inprogress: 'bg-purple-50 text-purple-700',
-  jobdone:   '',
+  jobdone:   'bg-green-50 text-green-700',
 };
 
 type SigRole = 'assignedTo' | 'reviewedBy' | 'receivedBy';
@@ -1014,6 +1015,7 @@ const WorkAssignmentPage = () => {
                 <th className="px-4 py-3 text-left font-semibold">เลขที่เอกสาร</th>
                 <th className="px-4 py-3 text-left font-semibold">เลขที่ใบสั่งขาย</th>
                 <th className="px-4 py-3 text-left font-semibold">ชื่อบริษัทลูกค้า</th>
+                <th className="px-4 py-3 text-left font-semibold">วันนัดหมาย</th>
                 <th className="px-4 py-3 text-left font-semibold">สถานะ</th>
                 <th className="px-4 py-3 text-left font-semibold">Remark</th>
                 <th className="px-4 py-3"></th>
@@ -1021,18 +1023,20 @@ const WorkAssignmentPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={6} className="py-10 text-center text-gray-400">
+                <tr><td colSpan={7} className="py-10 text-center text-gray-400">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                     กำลังโหลด...
                   </div>
                 </td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="py-10 text-center text-gray-400">ไม่พบเอกสาร</td></tr>
+                <tr><td colSpan={7} className="py-10 text-center text-gray-400">ไม่พบเอกสาร</td></tr>
               ) : (
                 filtered.map(item => {
                   const remarkText = REMARK_TEXT[item.status] ?? '';
                   const remarkClass = REMARK_CLASS[item.status] ?? '';
+                  const fmtDate = (iso: string) =>
+                    new Date(iso).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' });
                   return (
                     <tr key={item.id} className="hover:bg-blue-50/40 transition-colors">
                       <td className="px-4 py-3 font-mono text-blue-700 font-medium whitespace-nowrap">
@@ -1045,17 +1049,26 @@ const WorkAssignmentPage = () => {
                         <div className="font-medium text-gray-800 truncate max-w-[160px]">{item.customer.companyName}</div>
                         <div className="text-xs text-gray-400">{item.customer.customerId}</div>
                       </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                        {item.appointmentDate
+                          ? fmtDate(item.appointmentDate)
+                          : <span className="text-gray-400 text-xs">—</span>}
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CLASS[item.status] ?? 'bg-gray-100 text-gray-700'}`}>
                           {STATUS_LABEL[item.status] ?? item.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 max-w-[180px]">
-                        {remarkText && (
+                        {item.status === 'jobdone' ? (
+                          <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                            ปิดงาน {fmtDate(item.updatedAt)}
+                          </span>
+                        ) : remarkText ? (
                           <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${remarkClass}`}>
                             {remarkText}
                           </span>
-                        )}
+                        ) : null}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1 flex-wrap">
