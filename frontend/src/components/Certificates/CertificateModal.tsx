@@ -1663,7 +1663,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
             zeroReferenceNo: zeroTool?.certificateNumber || '',
             zeroVendor: zeroTool?.vendorName || '',
             zeroDueDate: zeroTool?.dueDate ? new Date(zeroTool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : '',
-            zeroGasName: zeroTool ? `${zeroTool.gasName} ${zeroTool.concentration} ${zeroTool.gasUnit || '%'}` : '',
+            zeroGasName: zeroTool ? (zeroTool.isMixGas ? zeroTool.gasName : `${zeroTool.gasName} ${zeroTool.concentration} ${zeroTool.gasUnit || '%'}`) : '',
             beforeRows: calZeroRows.map(row => ({
               gasType: row.gasName,
               gasUnit: row.gasUnit,

@@ -170,6 +170,18 @@ if (certificate.approvedBy?.signature) {
       // Process Cal Zero data for Biogas/CEMS certificates
       const calZeroData = this.processCalZeroData(certificate);
 
+      // Look up zero gas tool to expand mix gas components in standard reference
+      let zeroTool: any = null;
+      if (certificate.calZeroData) {
+        const czd = typeof certificate.calZeroData === 'string' ? JSON.parse(certificate.calZeroData) : certificate.calZeroData;
+        if (czd?.zeroToolId) {
+          zeroTool = await this.prisma.toolsManagement.findUnique({
+            where: { id: czd.zeroToolId },
+            include: { components: true }
+          });
+        }
+      }
+
       const templateData: CertificateTemplateData = {
         certificate: certificateWithProcessedData as CertificateWithAllRelations,
 
@@ -178,7 +190,7 @@ if (certificate.approvedBy?.signature) {
           logo: logoBase64
         },
 
-        standardReference: this.padToMinRows(await this.getStandardReference(certificate.calibrationData, certificate.tool, certificate)) as StandardReference[],
+        standardReference: this.padToMinRows(await this.getStandardReference(certificate.calibrationData, certificate.tool, certificate, zeroTool)) as StandardReference[],
         ambientConditions: this.processAmbientConditions(certificate.ambientConditions),
         signatures: this.getSignatureData(certificate, technicianSignature, approverSignature),
         calculations: this.getCalculationResults(certificateWithProcessedData),
@@ -308,7 +320,7 @@ if (certificate.approvedBy?.signature) {
   /**
    * ✅ UPDATED: Get standard reference data with tool support
    */
-  private async getStandardReference(calibrationData: any[], tool?: any, certificate?: any): Promise<StandardReference[]> {
+  private async getStandardReference(calibrationData: any[], tool?: any, certificate?: any, zeroTool?: any): Promise<StandardReference[]> {
     // Build from calibrationData rows (each row has referenceNo, vendor, certDueDate, gasType, standardValue, gasUnit)
     if (calibrationData && calibrationData.length > 0) {
       // Group rows by referenceNo so same-tank gases share one entry
@@ -333,7 +345,7 @@ if (certificate.approvedBy?.signature) {
 
       // Flatten: one row per gas (rows already deduplicated by gas name via calibrationData)
       const refs = Array.from(seen.values()).flat();
-      return this.prependZeroGasRef(refs, certificate);
+      return this.prependZeroGasRef(refs, certificate, zeroTool);
     }
 
     // Fallback: single tool
@@ -358,25 +370,43 @@ if (certificate.approvedBy?.signature) {
           dueDate
         }];
       }
-      return this.prependZeroGasRef(refs, certificate);
+      return this.prependZeroGasRef(refs, certificate, zeroTool);
     }
 
-    return this.prependZeroGasRef([], certificate);
+    return this.prependZeroGasRef([], certificate, zeroTool);
   }
 
   /** Prepend zero gas entry to standard reference list for Biogas/CEMS certificates */
-  private prependZeroGasRef(refs: StandardReference[], certificate?: any): StandardReference[] {
+  private prependZeroGasRef(refs: StandardReference[], certificate?: any, zeroTool?: any): StandardReference[] {
     if ((certificate?.certType !== 'biogas' && certificate?.certType !== 'cems' && certificate?.certType !== 'biogas_cems') || !certificate?.calZeroData) return refs;
     const czd = typeof certificate.calZeroData === 'string'
       ? JSON.parse(certificate.calZeroData)
       : certificate.calZeroData;
     if (!czd?.zeroGasName) return refs;
+
+    const refNo  = czd.zeroReferenceNo || 'N/A';
+    const vendor = czd.zeroVendor || 'N/A';
+    const dueDate = czd.zeroDueDate || 'N/A';
+
+    // Mix gas zero cylinder → list each component separately
+    if (zeroTool?.isMixGas && zeroTool.components?.length > 0) {
+      const componentRefs: StandardReference[] = zeroTool.components.map((c: any) => ({
+        standard: `${c.gasName} ${c.concentration} ${(c.gasUnit && c.gasUnit.toUpperCase() !== 'N/A') ? c.gasUnit : '%'}`,
+        gasUnit: '',
+        referenceNo: refNo,
+        vendor,
+        dueDate
+      }));
+      return [...componentRefs, ...refs];
+    }
+
+    // Single-gas zero entry
     const zeroEntry: StandardReference = {
       standard: czd.zeroGasName,
       gasUnit: '',
-      referenceNo: czd.zeroReferenceNo || 'N/A',
-      vendor: czd.zeroVendor || 'N/A',
-      dueDate: czd.zeroDueDate || 'N/A'
+      referenceNo: refNo,
+      vendor,
+      dueDate
     };
     return [zeroEntry, ...refs];
   }
