@@ -1518,14 +1518,26 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         }
       }
 
-      // Per-row uncertainty calculator (so each gas in a mix gets its own values)
+      // Per-row uncertainty calculator — 5-component model matching Excel/GUM budget.
+      // uncertaintyStandard stores U_cert (= conc × %/100, expanded at k=2).
+      // u_cal = U_cert / 4  (divide by k_cert=2, then by k_budget=2)
+      // u_temp / u_flow = 0.1 / √3  (gas temperature & flow rate effects)
       const calcRowUncert = (row: MultiRow, resolution: number) => {
         const m = [row.measure1, row.measure2, row.measure3];
         const mean = m.reduce((s, v) => s + v, 0) / m.length;
         const variance = m.length > 1 ? m.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (m.length - 1) : 0;
         const repeatability = Math.sqrt(variance) / Math.sqrt(m.length);
-        const resUncert = resolution / (2 * Math.sqrt(3));
-        const combined = Math.sqrt(Math.pow(row.uncertaintyStandard, 2) + Math.pow(repeatability, 2) + Math.pow(resUncert, 2));
+        const u_cal  = row.uncertaintyStandard / 4;
+        const u_res  = resolution / (2 * Math.sqrt(3));
+        const u_temp = 0.1 / Math.sqrt(3);
+        const u_flow = 0.1 / Math.sqrt(3);
+        const combined = Math.sqrt(
+          Math.pow(u_cal, 2) +
+          Math.pow(repeatability, 2) +
+          Math.pow(u_res, 2) +
+          Math.pow(u_temp, 2) +
+          Math.pow(u_flow, 2)
+        );
         return {
           repeatability: parseFloat(repeatability.toFixed(4)),
           combinedUncertainty: parseFloat(combined.toFixed(4)),

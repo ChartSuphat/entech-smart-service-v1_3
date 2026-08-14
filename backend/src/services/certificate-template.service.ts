@@ -129,10 +129,11 @@ export class CertificateTemplateService {
       }
 
       // Process calibration data with gasUnit from tool
+      const isMixGas = certificate.tool?.isMixGas ?? false;
       const gasUnit = (certificate.tool?.gasUnit && certificate.tool.gasUnit.toUpperCase() !== 'N/A') ? certificate.tool.gasUnit : 'ppm';
-      const processedCalibrationData = this.padToMinRows(this.processCalibrationData(certificate.calibrationData, gasUnit));
+      const processedCalibrationData = this.padToMinRows(this.processCalibrationData(certificate.calibrationData, gasUnit, isMixGas));
       const processedAdjustedData = certificate.adjustedData && certificate.adjustedData.length > 0 ?
-        this.padToMinRows(this.processCalibrationData(certificate.adjustedData, gasUnit)) : [];
+        this.padToMinRows(this.processCalibrationData(certificate.adjustedData, gasUnit, isMixGas)) : [];
 
       // Auto-fill signature paths
       let technicianSignature: string | undefined;
@@ -232,7 +233,7 @@ if (certificate.approvedBy?.signature) {
     return result;
   }
 
-  private processCalibrationData(calibrationData: any[], gasUnit: string = 'ppm'): any[] {
+  private processCalibrationData(calibrationData: any[], gasUnit: string = 'ppm', isMixGas: boolean = false): any[] {
     if (!calibrationData || calibrationData.length === 0) {
       return [];
     }
@@ -240,27 +241,58 @@ if (certificate.approvedBy?.signature) {
     return calibrationData.map(data => {
       const measurements = [data.measurement1, data.measurement2, data.measurement3];
 
-      // Calculate values if they don't exist or recalculate if needed
       const meanValue = data.meanValue || this.calculateMean(measurements);
       const error = data.error !== null ? data.error : (data.standardValue - meanValue);
       const repeatability = data.repeatability || this.calculateRepeatability(measurements, meanValue);
-      const combinedUncertainty = data.combinedUncertainty || this.calculateCombinedUncertainty(
-        data.uncertaintyStandard,
-        repeatability,
-        data.resolution
-      );
-      const expandedUncertainty = data.expandedUncertainty || (combinedUncertainty * 2); // k=2
+
+      let combinedUncertainty: number;
+      let expandedUncertainty: number;
+      if (isMixGas) {
+        // Mix gas: always recalculate using the 5-component formula (stored values were shared)
+        combinedUncertainty = this.calculateCombinedUncertaintyMixGas(
+          data.uncertaintyStandard,
+          repeatability,
+          data.resolution
+        );
+        expandedUncertainty = combinedUncertainty * 2;
+      } else {
+        // Single gas: use manually-entered stored values; fall back to simple formula only if absent
+        combinedUncertainty = data.combinedUncertainty || this.calculateCombinedUncertainty(
+          data.uncertaintyStandard,
+          repeatability,
+          data.resolution
+        );
+        expandedUncertainty = data.expandedUncertainty || combinedUncertainty * 2;
+      }
 
       return {
         ...data,
-        gasUnit: (data.gasUnit && data.gasUnit.toUpperCase() !== 'N/A') ? data.gasUnit : gasUnit,
+        gasUnit: this.resolveGasUnit(data.gasType, data.gasUnit, gasUnit),
         meanValue: Number(meanValue.toFixed(2)),
         error: Number(error.toFixed(2)),
         repeatability: Number(repeatability.toFixed(1)),
-        combinedUncertainty: Number(combinedUncertainty.toFixed(1)),
-        expandedUncertainty: Number(expandedUncertainty.toFixed(1))
+        combinedUncertainty: Number(combinedUncertainty.toFixed(4)),
+        expandedUncertainty: Number(expandedUncertainty.toFixed(4))
       };
     });
+  }
+
+  /**
+   * Resolve the display unit for a gas row, overriding 'ppm' for gases that are
+   * never measured in ppm (e.g. O2 is always %Vol in CEMS context).
+   */
+  private resolveGasUnit(gasType: string, storedUnit: string, fallback: string = 'ppm'): string {
+    const GAS_UNIT_OVERRIDE: Record<string, string> = {
+      'o2': '%Vol',
+      'oxygen': '%Vol',
+      'o₂': '%Vol',
+    };
+    const raw = (storedUnit && storedUnit.toUpperCase() !== 'N/A') ? storedUnit : fallback;
+    if (raw.toLowerCase() === 'ppm') {
+      const override = GAS_UNIT_OVERRIDE[(gasType || '').toLowerCase()];
+      if (override) return override;
+    }
+    return raw;
   }
 
   /**
@@ -280,18 +312,44 @@ if (certificate.approvedBy?.signature) {
   }
 
   /**
-   * Calculate combined uncertainty
+   * Combined uncertainty for single-gas certs.
+   * Stored uncertaintyStandard is already the pre-computed u_cal entered by the technician.
    */
   private calculateCombinedUncertainty(
-    uncertaintyStandard: number, 
-    repeatability: number, 
+    uncertaintyStandard: number,
+    repeatability: number,
     resolution: number
   ): number {
     const resolutionUncertainty = resolution / (2 * Math.sqrt(3));
     return Math.sqrt(
-      Math.pow(uncertaintyStandard, 2) + 
-      Math.pow(repeatability, 2) + 
+      Math.pow(uncertaintyStandard, 2) +
+      Math.pow(repeatability, 2) +
       Math.pow(resolutionUncertainty, 2)
+    );
+  }
+
+  /**
+   * Combined uncertainty for mix-gas certs (5-component model, per Excel/GUM budget).
+   * uncertaintyStandard = U_cert = concentration × percent / 100 (expanded, k=2).
+   * u_cal  = U_cert / 4  (= U_cert / (k_cert=2 × k_budget=2))
+   * u_temp = 0.1 / √3   (gas temperature effect)
+   * u_flow = 0.1 / √3   (gas flow rate effect)
+   */
+  private calculateCombinedUncertaintyMixGas(
+    uncertaintyStandard: number,
+    repeatability: number,
+    resolution: number
+  ): number {
+    const u_cal  = uncertaintyStandard / 4;
+    const u_res  = resolution / (2 * Math.sqrt(3));
+    const u_temp = 0.1 / Math.sqrt(3);
+    const u_flow = 0.1 / Math.sqrt(3);
+    return Math.sqrt(
+      Math.pow(u_cal, 2) +
+      Math.pow(repeatability, 2) +
+      Math.pow(u_res, 2) +
+      Math.pow(u_temp, 2) +
+      Math.pow(u_flow, 2)
     );
   }
 
@@ -340,10 +398,11 @@ if (certificate.approvedBy?.signature) {
         const refNo = row.referenceNo || tool?.certificateNumber || 'N/A';
         const vendor = row.vendor || tool?.vendorName || 'N/A';
         const dueDate = row.certDueDate || (tool?.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : 'N/A');
-        // Use stored gasUnit; fall back to component lookup for mix gas; last resort 'ppm'
-        const gasUnit = (row.gasUnit && row.gasUnit.toUpperCase() !== 'N/A')
+        // Resolve unit: stored value → component map fallback → ppm; then override for O2
+        const rawUnit = (row.gasUnit && row.gasUnit.toUpperCase() !== 'N/A')
           ? row.gasUnit
           : (componentUnitMap.get((row.gasType || '').toLowerCase()) || 'ppm');
+        const gasUnit = this.resolveGasUnit(row.gasType, rawUnit);
         const standard = `${row.gasType} ${row.standardValue} ${gasUnit}`;
 
         if (!seen.has(refNo)) seen.set(refNo, []);
@@ -368,7 +427,7 @@ if (certificate.approvedBy?.signature) {
       let refs: StandardReference[];
       if (tool.isMixGas && tool.components?.length) {
         refs = tool.components.map((c: any) => ({
-          standard: `${c.gasName} ${c.concentration} ${(c.gasUnit && c.gasUnit.toUpperCase() !== 'N/A') ? c.gasUnit : gasUnit}`,
+          standard: `${c.gasName} ${c.concentration} ${this.resolveGasUnit(c.gasName, c.gasUnit, gasUnit)}`,
           gasUnit: '',
           referenceNo: tool.certificateNumber || 'N/A',
           vendor: tool.vendorName || 'N/A',
