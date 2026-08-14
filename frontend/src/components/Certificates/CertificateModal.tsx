@@ -1518,6 +1518,21 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         }
       }
 
+      // Per-row uncertainty calculator (so each gas in a mix gets its own values)
+      const calcRowUncert = (row: MultiRow, resolution: number) => {
+        const m = [row.measure1, row.measure2, row.measure3];
+        const mean = m.reduce((s, v) => s + v, 0) / m.length;
+        const variance = m.length > 1 ? m.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (m.length - 1) : 0;
+        const repeatability = Math.sqrt(variance) / Math.sqrt(m.length);
+        const resUncert = resolution / (2 * Math.sqrt(3));
+        const combined = Math.sqrt(Math.pow(row.uncertaintyStandard, 2) + Math.pow(repeatability, 2) + Math.pow(resUncert, 2));
+        return {
+          repeatability: parseFloat(repeatability.toFixed(4)),
+          combinedUncertainty: parseFloat(combined.toFixed(4)),
+          expandedUncertainty: parseFloat((combined * 2).toFixed(4)),
+        };
+      };
+
       // Prepare calibration data
       const calibrationData = multiRows.length > 0
         ? multiRows.map(row => ({
@@ -1534,9 +1549,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
             uncertaintyStandard: row.uncertaintyStandard,
             meanValue: row.meanUUC,
             error: row.error,
-            repeatability: formData.uncertaintyBudget.before.repeatability,
-            combinedUncertainty: formData.uncertaintyBudget.before.combinedUncertainty,
-            expandedUncertainty: formData.uncertaintyBudget.before.expandedUncertainty
+            ...calcRowUncert(row, formData.resolution)
           }))
         : [{
             gasType: selectedTool?.gasName || 'Unknown Gas',
@@ -1570,9 +1583,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
               uncertaintyStandard: row.uncertaintyStandard,
               meanValue: row.meanUUC,
               error: row.error,
-              repeatability: formData.uncertaintyBudget.after.repeatability,
-              combinedUncertainty: formData.uncertaintyBudget.after.combinedUncertainty,
-              expandedUncertainty: formData.uncertaintyBudget.after.expandedUncertainty
+              ...calcRowUncert(row, formData.resolution)
             }))
           : [{
         gasType: selectedTool?.gasName || 'Unknown Gas',

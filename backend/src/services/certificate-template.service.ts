@@ -98,7 +98,7 @@ export class CertificateTemplateService {
           equipment: true,
           probe: true,
           customer: true,
-          tool: true,
+          tool: { include: { components: true } },
           createdBy: {
             select: { 
               id: true, 
@@ -321,6 +321,16 @@ if (certificate.approvedBy?.signature) {
    * ✅ UPDATED: Get standard reference data with tool support
    */
   private async getStandardReference(calibrationData: any[], tool?: any, certificate?: any, zeroTool?: any): Promise<StandardReference[]> {
+    // Build component gasUnit lookup for mix gas tools (gasName → gasUnit)
+    const componentUnitMap = new Map<string, string>();
+    if (tool?.isMixGas && tool.components?.length > 0) {
+      for (const c of tool.components) {
+        if (c.gasUnit && c.gasUnit.toUpperCase() !== 'N/A') {
+          componentUnitMap.set(c.gasName.toLowerCase(), c.gasUnit);
+        }
+      }
+    }
+
     // Build from calibrationData rows (each row has referenceNo, vendor, certDueDate, gasType, standardValue, gasUnit)
     if (calibrationData && calibrationData.length > 0) {
       // Group rows by referenceNo so same-tank gases share one entry
@@ -330,7 +340,10 @@ if (certificate.approvedBy?.signature) {
         const refNo = row.referenceNo || tool?.certificateNumber || 'N/A';
         const vendor = row.vendor || tool?.vendorName || 'N/A';
         const dueDate = row.certDueDate || (tool?.dueDate ? new Date(tool.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Bangkok' }) : 'N/A');
-        const gasUnit = (row.gasUnit && row.gasUnit.toUpperCase() !== 'N/A') ? row.gasUnit : 'ppm';
+        // Use stored gasUnit; fall back to component lookup for mix gas; last resort 'ppm'
+        const gasUnit = (row.gasUnit && row.gasUnit.toUpperCase() !== 'N/A')
+          ? row.gasUnit
+          : (componentUnitMap.get((row.gasType || '').toLowerCase()) || 'ppm');
         const standard = `${row.gasType} ${row.standardValue} ${gasUnit}`;
 
         if (!seen.has(refNo)) seen.set(refNo, []);
