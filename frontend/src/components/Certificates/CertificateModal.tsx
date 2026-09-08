@@ -672,8 +672,16 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
       // Restore multiRows from calibrationData for ALL cert types
       {
+        // Override known-wrong units at load time (O2 stored as 'ppm' in old certs)
+        const fixGasUnit = (gasType: string, gasUnit: string) => {
+          if ((gasUnit || '').toLowerCase() === 'ppm') {
+            const overrides: Record<string, string> = { o2: '%Vol', oxygen: '%Vol', 'o₂': '%Vol' };
+            return overrides[(gasType || '').toLowerCase()] || gasUnit;
+          }
+          return gasUnit;
+        };
         const toRow = (r: any) => ({
-          gasName: r.gasType, gasUnit: r.gasUnit, standardValue: r.standardValue || 0,
+          gasName: r.gasType, gasUnit: fixGasUnit(r.gasType, r.gasUnit), standardValue: r.standardValue || 0,
           uncertaintyStandard: r.uncertaintyStandard || 0,
           measure1: r.measurement1 || 0, measure2: r.measurement2 || 0, measure3: r.measurement3 || 0,
           meanUUC: r.meanValue || 0, error: r.error || 0,
@@ -693,7 +701,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         if (czd) {
           if (czd.zeroToolId) setCalZeroToolId(czd.zeroToolId);
           const toZeroRow = (r: any) => ({
-            gasName: r.gasType, gasUnit: r.gasUnit, standardValue: 0,
+            gasName: r.gasType, gasUnit: fixGasUnit(r.gasType, r.gasUnit), standardValue: 0,
             uncertaintyStandard: r.uncertaintyStandard || 0,
             measure1: r.measurement1 || 0, measure2: r.measurement2 || 0, measure3: r.measurement3 || 0,
             meanUUC: r.meanValue || 0, error: r.error || 0,

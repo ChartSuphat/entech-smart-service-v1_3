@@ -400,7 +400,10 @@ export class CertificateService {
           data: data.calibrationData.map(cal => ({
             certificateId: id,
             gasType: cal.gasType,
-            gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
+            gasUnit: cal.gasUnit || toolGasUnit,
+            referenceNo: cal.referenceNo || null,
+            vendor: cal.vendor || null,
+            certDueDate: cal.certDueDate || null,
             standardValue: cal.standardValue,
             measurement1: cal.measurement1,
             measurement2: cal.measurement2,
@@ -456,7 +459,10 @@ export class CertificateService {
           data: data.adjustedData.map(adj => ({
             certificateId: id,
             gasType: adj.gasType,
-            gasUnit: toolGasUnit, // ✅ Add gasUnit from tool
+            gasUnit: adj.gasUnit || toolGasUnit,
+            referenceNo: adj.referenceNo || null,
+            vendor: adj.vendor || null,
+            certDueDate: adj.certDueDate || null,
             standardValue: adj.standardValue,
             measurement1: adj.measurement1,
             measurement2: adj.measurement2,
