@@ -768,7 +768,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         setFormData(prev => ({
           ...prev,
           certificateNo: '',
-          formatType: 'official', // ✅ CHANGED: Set to 'official' for new certificates
+          formatType: 'official',
           customerId: '',
           equipmentId: '',
           probeId: '',
@@ -788,8 +788,21 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           }
         }));
 
-        // ✅ RESET edit-specific states for create mode
-        setHasWatermark(false); // No watermark for new certificates
+        // Reset cert type and gas tool state
+        setCertType('gas');
+        setBiogasToolIds([0]);
+        setToolSearchTerms(['']);
+        setShowToolDropdowns([false]);
+        setMultiRows([]);
+        setMultiAdjRows([]);
+        // Reset cal zero state
+        setCalZeroToolId(0);
+        setCalZeroSearchTerm('');
+        setCalZeroRows([]);
+        setCalZeroAdjRows([]);
+        setCalZeroHasAdjustment(false);
+
+        setHasWatermark(false);
         setIssueDate(new Date().toISOString().split('T')[0]);
         setCustomerInput('');
         setEquipmentInput('');
@@ -2385,7 +2398,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                       : 'bg-gray-50 text-gray-500 border-gray-300 hover:bg-gray-100'
                   }`}
                 >
-                  {showExpiredGas ? 'Hiding expired' : 'Show expired'}
+                  {showExpiredGas ? 'Showing expired' : 'Show expired'}
                 </button>
               </div>
               {biogasToolIds.map((toolId, idx) => {
