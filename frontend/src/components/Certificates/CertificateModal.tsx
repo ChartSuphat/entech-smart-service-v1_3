@@ -670,16 +670,17 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         setBiogasToolIds([fullCertificate.toolId]);
       }
 
+      // Override known-wrong units at load time (e.g. O2 stored as 'ppm' in old certs)
+      const fixGasUnit = (gasType: string, gasUnit: string) => {
+        if ((gasUnit || '').toLowerCase() === 'ppm') {
+          const overrides: Record<string, string> = { o2: '%Vol', oxygen: '%Vol', 'o₂': '%Vol' };
+          return overrides[(gasType || '').toLowerCase()] || gasUnit;
+        }
+        return gasUnit;
+      };
+
       // Restore multiRows from calibrationData for ALL cert types
       {
-        // Override known-wrong units at load time (O2 stored as 'ppm' in old certs)
-        const fixGasUnit = (gasType: string, gasUnit: string) => {
-          if ((gasUnit || '').toLowerCase() === 'ppm') {
-            const overrides: Record<string, string> = { o2: '%Vol', oxygen: '%Vol', 'o₂': '%Vol' };
-            return overrides[(gasType || '').toLowerCase()] || gasUnit;
-          }
-          return gasUnit;
-        };
         const toRow = (r: any) => ({
           gasName: r.gasType, gasUnit: fixGasUnit(r.gasType, r.gasUnit), standardValue: r.standardValue || 0,
           uncertaintyStandard: r.uncertaintyStandard || 0,
