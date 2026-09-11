@@ -15,6 +15,7 @@ interface UncertaintyBudgetTableProps {
   uncertaintyBudget: UncertaintyBudget;
   resolution: number;
   measurementType?: 'before' | 'after';
+  showTempFlow?: boolean;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ const UncertaintyBudgetTable: React.FC<UncertaintyBudgetTableProps> = ({
   uncertaintyBudget,
   resolution,
   measurementType = 'before',
+  showTempFlow = false,
   className = ""
 }) => {
   // Define colors and labels based on measurement type
@@ -89,7 +91,7 @@ const UncertaintyBudgetTable: React.FC<UncertaintyBudgetTableProps> = ({
               <td className={`border ${config.tableBorder} px-2 py-1`}>B</td>
               <td className={`border ${config.tableBorder} px-2 py-1`}>Resolution of UUC</td>
               <td className={`border ${config.tableBorder} px-2 py-1 text-blue-600 font-mono`}>
-                {resolution.toFixed(2)}
+                {(resolution / 2).toFixed(2)}
               </td>
               <td className={`border ${config.tableBorder} px-2 py-1`}>rectangular</td>
               <td className={`border ${config.tableBorder} px-2 py-1`}>SQRT(3)</td>
@@ -114,36 +116,40 @@ const UncertaintyBudgetTable: React.FC<UncertaintyBudgetTableProps> = ({
               </td>
               <td className={`border ${config.tableBorder} px-2 py-1`}>∞</td>
             </tr>
-            <tr>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>δG_Temp</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>B</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>Gas Temperature Effect</td>
-              <td className={`border ${config.tableBorder} px-2 py-1 text-blue-600 font-mono`}>
-                {uncertaintyBudget.gasTemperatureEffect.toFixed(1)}
-              </td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>rectangular</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>SQRT(3)</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>1.0</td>
-              <td className={`border ${config.tableBorder} px-2 py-1 font-mono`}>
-                {(uncertaintyBudget.gasTemperatureEffect / Math.sqrt(3)).toFixed(3)}
-              </td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>∞</td>
-            </tr>
-            <tr>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>δG_Flow</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>B</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>Gas Flow rate Effect</td>
-              <td className={`border ${config.tableBorder} px-2 py-1 text-blue-600 font-mono`}>
-                {uncertaintyBudget.gasFlowRateEffect.toFixed(1)}
-              </td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>rectangular</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>SQRT(3)</td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>1.0</td>
-              <td className={`border ${config.tableBorder} px-2 py-1 font-mono`}>
-                {(uncertaintyBudget.gasFlowRateEffect / Math.sqrt(3)).toFixed(3)}
-              </td>
-              <td className={`border ${config.tableBorder} px-2 py-1`}>∞</td>
-            </tr>
+            {showTempFlow && (
+              <tr>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>δG_Temp</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>B</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>Gas Temperature Effect</td>
+                <td className={`border ${config.tableBorder} px-2 py-1 text-blue-600 font-mono`}>
+                  {uncertaintyBudget.gasTemperatureEffect.toFixed(1)}
+                </td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>rectangular</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>SQRT(3)</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>1.0</td>
+                <td className={`border ${config.tableBorder} px-2 py-1 font-mono`}>
+                  {(uncertaintyBudget.gasTemperatureEffect / Math.sqrt(3)).toFixed(3)}
+                </td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>∞</td>
+              </tr>
+            )}
+            {showTempFlow && (
+              <tr>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>δG_Flow</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>B</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>Gas Flow rate Effect</td>
+                <td className={`border ${config.tableBorder} px-2 py-1 text-blue-600 font-mono`}>
+                  {uncertaintyBudget.gasFlowRateEffect.toFixed(1)}
+                </td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>rectangular</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>SQRT(3)</td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>1.0</td>
+                <td className={`border ${config.tableBorder} px-2 py-1 font-mono`}>
+                  {(uncertaintyBudget.gasFlowRateEffect / Math.sqrt(3)).toFixed(3)}
+                </td>
+                <td className={`border ${config.tableBorder} px-2 py-1`}>∞</td>
+              </tr>
+            )}
             <tr className="bg-gray-100">
               <td className={`border ${config.tableBorder} px-2 py-1`}>uc</td>
               <td className={`border ${config.tableBorder} px-2 py-1`}>-</td>
