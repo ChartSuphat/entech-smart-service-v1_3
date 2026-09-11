@@ -1119,7 +1119,7 @@ const WorkAssignmentPage = () => {
                               Approve
                             </button>
                           )}
-                          {isAdmin && item.status === 'approved' && (
+                          {isStaff && item.status === 'approved' && (
                             <button
                               onClick={() => { setTableSignRole('receivedBy'); setTableSignItemId(item.id); }}
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors shadow-sm">
@@ -1181,6 +1181,7 @@ const WorkAssignmentPage = () => {
           <div className="flex items-center gap-2 mb-2 bg-white/10 rounded-xl px-3 py-2 flex-wrap">
             <span className="text-white/70 text-xs font-medium mr-1">ลงนาม :</span>
             {(['assignedTo', 'reviewedBy', 'receivedBy'] as SigRole[]).map(role => {
+              if (role === 'reviewedBy' && !isAdmin) return null;
               const sigField = `${role}Sig` as keyof WorkAssignment;
               const signed = !!previewItem[sigField];
               return (

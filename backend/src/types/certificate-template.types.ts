@@ -69,6 +69,7 @@ export interface ProbeInfo {
   probeDescription: string;
   probeModel: string;
   probeSN: string;
+  idNoOrControlNo?: string;
 }
 
 export interface CustomerInfo {

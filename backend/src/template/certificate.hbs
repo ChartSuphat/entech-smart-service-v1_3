@@ -369,6 +369,11 @@
                     <td>{{certificate.probe.probeSN}}</td>
                 </tr>
                 <tr>
+                    <td>ID No. or Control No.</td>
+                    <td>:</td>
+                    <td>{{#if certificate.probe.idNoOrControlNo}}{{certificate.probe.idNoOrControlNo}}{{else}}-{{/if}}</td>
+                </tr>
+                <tr>
                     <td>Customer Name</td>
                     <td>:</td>
                     <td>{{certificate.customer.companyName}}</td>
