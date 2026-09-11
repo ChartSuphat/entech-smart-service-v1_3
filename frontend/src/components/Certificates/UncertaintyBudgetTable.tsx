@@ -23,7 +23,7 @@ const UncertaintyBudgetTable: React.FC<UncertaintyBudgetTableProps> = ({
   uncertaintyBudget,
   resolution,
   measurementType = 'before',
-  showTempFlow = false,
+  showTempFlow = true,
   className = ""
 }) => {
   // Define colors and labels based on measurement type

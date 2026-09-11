@@ -1363,15 +1363,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
     // Resolution uncertainty: half-width = resolution/2, u_res = (resolution/2)/√3
     const resolutionUncertainty = resolution / (2 * Math.sqrt(3));
-    const isCems = certType === 'cems' || certType === 'biogas';
 
-    // Combined standard uncertainty (temp/flow components only for CEMS/biogas)
+    // Combined standard uncertainty (all 5 components for every cert type)
     const combinedUncertainty = Math.sqrt(
       freshRepeatability ** 2 +
       resolutionUncertainty ** 2 +
       (standardUncertainty / 2) ** 2 +
-      (isCems ? (gasTemperatureEffect / Math.sqrt(3)) ** 2 : 0) +
-      (isCems ? (gasFlowRateEffect / Math.sqrt(3)) ** 2 : 0)
+      (gasTemperatureEffect / Math.sqrt(3)) ** 2 +
+      (gasFlowRateEffect / Math.sqrt(3)) ** 2
     );
 
     // Expanded uncertainty (k=2)
@@ -1421,15 +1420,14 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
     // Resolution uncertainty: half-width = resolution/2, u_res = (resolution/2)/√3
     const resolutionUncertainty = resolution / (2 * Math.sqrt(3));
-    const isCems = certType === 'cems' || certType === 'biogas';
 
-    // Combined standard uncertainty (temp/flow components only for CEMS/biogas)
+    // Combined standard uncertainty (all 5 components for every cert type)
     const combinedUncertainty = Math.sqrt(
       repeatability ** 2 +
       resolutionUncertainty ** 2 +
       (standardUncertainty / 2) ** 2 +
-      (isCems ? (gasTemperatureEffect / Math.sqrt(3)) ** 2 : 0) +
-      (isCems ? (gasFlowRateEffect / Math.sqrt(3)) ** 2 : 0))
+      (gasTemperatureEffect / Math.sqrt(3)) ** 2 +
+      (gasFlowRateEffect / Math.sqrt(3)) ** 2)
       ;
 
     // Expanded uncertainty (k=2)
@@ -3157,7 +3155,6 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                 uncertaintyBudget={formData.uncertaintyBudget.before}
                 resolution={formData.resolution}
                 measurementType="before"
-                showTempFlow={certType === 'cems' || certType === 'biogas'}
                 className=""
               />
             )}
@@ -3171,7 +3168,6 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                 uncertaintyBudget={formData.uncertaintyBudget.after}
                 resolution={formData.resolution}
                 measurementType="after"
-                showTempFlow={certType === 'cems' || certType === 'biogas'}
                 className=""
               />
             )}
