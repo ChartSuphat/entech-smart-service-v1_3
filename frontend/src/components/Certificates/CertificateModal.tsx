@@ -630,7 +630,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
         uncertaintyBudget: {
           before: {
             repeatability: fullCertificate.calibrationData?.[0]?.repeatability || 0,
-            resolution: fullCertificate.calibrationData?.[0]?.resolution || 0.1,
+            resolution: (fullCertificate.calibrationData?.[0]?.resolution || 0) / (2 * Math.sqrt(3)),
             standardUncertainty: fullCertificate.calibrationData?.[0]?.uncertaintyStandard || 0,
             gasTemperatureEffect: 0.1,
             gasFlowRateEffect: 0.1,
@@ -640,7 +640,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
           },
           after: {
             repeatability: fullCertificate.adjustedData?.[0]?.repeatability || 0,
-            resolution: fullCertificate.adjustedData?.[0]?.resolution || 0.1,
+            resolution: (fullCertificate.adjustedData?.[0]?.resolution || 0) / (2 * Math.sqrt(3)),
             standardUncertainty: fullCertificate.adjustedData?.[0]?.uncertaintyStandard || 0,
             gasTemperatureEffect: 0.1,
             gasFlowRateEffect: 0.1,
