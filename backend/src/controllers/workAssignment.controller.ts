@@ -45,16 +45,17 @@ const readSignatureAsBase64 = (userId: number, sigFilename: string | null): stri
 const generateDocNo = async (): Promise<string> => {
   const today = new Date();
   const yy = String(today.getFullYear()).slice(2);
+  const prefix = `CAL${yy}`;
 
-  const startOfYear = new Date(today.getFullYear(), 0, 1);
-  const endOfYear = new Date(today.getFullYear() + 1, 0, 1);
-
-  const count = await prisma.workAssignment.count({
-    where: { createdAt: { gte: startOfYear, lt: endOfYear } }
+  const last = await prisma.workAssignment.findFirst({
+    where: { documentNo: { startsWith: prefix } },
+    orderBy: { documentNo: 'desc' },
+    select: { documentNo: true }
   });
 
-  const seq = String(count + 1).padStart(4, '0');
-  return `CAL${yy}${seq}`;
+  const lastSeq = last ? parseInt(last.documentNo.slice(prefix.length), 10) : 0;
+  const seq = String(lastSeq + 1).padStart(4, '0');
+  return `${prefix}${seq}`;
 };
 
 const includeRelations = {
