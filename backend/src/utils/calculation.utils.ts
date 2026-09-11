@@ -15,8 +15,8 @@ export const calculateCalibrationValues = (data: {
   const stdDev = Math.sqrt(variance);
   const repeatability = stdDev;
   
-  // Calculate resolution uncertainty
-  const resolutionUncertainty = data.resolution / Math.sqrt(3);
+  // Calculate resolution uncertainty: half-width = resolution/2, u_res = (resolution/2)/√3
+  const resolutionUncertainty = data.resolution / (2 * Math.sqrt(3));
   
   // Calculate combined uncertainty
   const combinedUncertainty = Math.sqrt(

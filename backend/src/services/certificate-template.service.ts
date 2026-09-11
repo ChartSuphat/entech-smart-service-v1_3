@@ -511,9 +511,10 @@ if (certificate.approvedBy?.signature) {
       ? JSON.parse(certificate.calZeroData)
       : certificate.calZeroData;
 
-    const beforeRows = this.processCalibrationData(czd.beforeRows || [], 'ppm');
+    const isMixGas = certificate.tool?.isMixGas ?? false;
+    const beforeRows = this.processCalibrationData(czd.beforeRows || [], 'ppm', isMixGas);
     const afterRows = czd.afterRows?.length > 0
-      ? this.processCalibrationData(czd.afterRows, 'ppm')
+      ? this.processCalibrationData(czd.afterRows, 'ppm', isMixGas)
       : [];
 
     return {
