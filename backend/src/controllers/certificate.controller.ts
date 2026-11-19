@@ -92,6 +92,14 @@ export class CertificateController {
         return;
       }
 
+      if (!CertificateService.canViewCertificate(req.user, certificate as any)) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. You do not have permission to view this certificate.'
+        });
+        return;
+      }
+
       res.json({
         success: true,
         data: certificate,

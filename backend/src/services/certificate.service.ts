@@ -20,6 +20,23 @@ export class CertificateService {
   // Entech company code - users with this code see all certificates
   private static readonly ENTECH_COMPANY_CODE = 'ENTCH';
 
+  /**
+   * Read access to a single certificate (view / preview / PDF download).
+   * - admin, technician → all certificates
+   * - user → approved certificates only; external companies limited to their own customer
+   */
+  static canViewCertificate(
+    user: { role: string; companyCode?: string | null } | undefined,
+    certificate: { status: string; customer?: { customerId: string } | null }
+  ): boolean {
+    if (!user) return false;
+    if (user.role === 'admin' || user.role === 'technician') return true;
+    if (user.role !== 'user' || certificate.status !== 'approved') return false;
+    if (!user.companyCode) return false;
+    if (user.companyCode === CertificateService.ENTECH_COMPANY_CODE) return true;
+    return certificate.customer?.customerId === user.companyCode;
+  }
+
   async getAllCertificates(filters: CertificateFilters) {
     const { page, limit, status, search, userRole, userCompanyCode } = filters;
     const skip = (page - 1) * limit;

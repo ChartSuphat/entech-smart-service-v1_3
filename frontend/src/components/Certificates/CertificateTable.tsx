@@ -74,7 +74,8 @@ interface CertificateTableProps {
   onSearchChange?: (searchTerm: string) => void;
   onPageChange: (page: number) => void;
   onEdit?: (certificate: Certificate) => void;
-  onView: (certificate: Certificate) => void;
+  canEditCertificate?: (certificate: Certificate) => boolean;
+  onView:(certificate: Certificate) => void;
   onDelete?: (certificate: Certificate) => void;
   onBulkApprove?: (certificateIds: number[]) => void;
   sortConfig?: SortConfig;
@@ -93,6 +94,7 @@ const CertificateTable: React.FC<CertificateTableProps> = ({
   onSearchChange,
   onPageChange,
   onEdit,
+  canEditCertificate,
   onView,
   onDelete,
   onBulkApprove,
@@ -463,7 +465,7 @@ const CertificateTable: React.FC<CertificateTableProps> = ({
                       <HiDocument className="h-3 w-3" />
                     </button>
 
-                    {canModify && onEdit && (
+                    {canModify && onEdit && (canEditCertificate?.(certificate) ?? true) && (
                       <button
                         onClick={() => onEdit(certificate)}
                         className="p-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"

@@ -193,14 +193,10 @@ export class PDFGeneratorController {
         return;
       }
 
-      // Check permissions (creator or admin)
-      const canGenerate = req.user?.role === 'admin' || 
-                         (req.user?.role === 'technician' && certificate.createdById === req.user.id);
-
-      if (!canGenerate) {
+      if (!CertificateService.canViewCertificate(req.user, certificate as any)) {
         res.status(403).json({
           success: false,
-          message: 'Access denied. You can only generate PDFs for certificates you created, or be an administrator.'
+          message: 'Access denied. You do not have permission to view this certificate.'
         });
         return;
       }
@@ -261,14 +257,10 @@ export class PDFGeneratorController {
         return;
       }
 
-      // Check permissions (creator or admin)
-      const canGenerate = req.user?.role === 'admin' || 
-                         (req.user?.role === 'technician' && certificate.createdById === req.user.id);
-
-      if (!canGenerate) {
+      if (!CertificateService.canViewCertificate(req.user, certificate as any)) {
         res.status(403).json({
           success: false,
-          message: 'Access denied. You can only generate PDFs for certificates you created, or be an administrator.'
+          message: 'Access denied. You do not have permission to view this certificate.'
         });
         return;
       }

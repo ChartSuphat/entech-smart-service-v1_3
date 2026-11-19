@@ -77,6 +77,9 @@ const CertificatePage: React.FC = () => {
   const itemsPerPage = 10;
   const canModify = user?.role === 'admin' || user?.role === 'technician';
   const isAdmin = user?.role === 'admin';
+  // Admin edits all; technician edits only certificates they created (matches backend rule)
+  const canEditCertificate = (certificate: Certificate) =>
+    isAdmin || (user?.role === 'technician' && certificate.createdById === user?.id);
 
   // API Functions
   const fetchUserInfo = async () => {
@@ -430,7 +433,8 @@ const CertificatePage: React.FC = () => {
       searchTerm={searchTerm}
       onSearchChange={handleSearchChange}
       onPageChange={setCurrentPage}
-      onEdit={isAdmin ? handleEditCertificate : undefined}
+      onEdit={canModify ? handleEditCertificate : undefined}
+      canEditCertificate={canEditCertificate}
       onView={handleViewCertificate}
       onDelete={canModify ? handleDeleteCertificate : undefined}
       onBulkApprove={canModify ? handleBulkApprove : undefined}
@@ -443,7 +447,7 @@ const CertificatePage: React.FC = () => {
 
 
       {/* Modal */}
-      {(isAdmin || (canModify && modalMode === 'create') || modalMode === 'view') && (
+      {(canModify || modalMode === 'view') && (
         <CertificateModal
           isOpen={isModalOpen}
           mode={modalMode}

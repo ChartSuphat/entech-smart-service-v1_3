@@ -2,6 +2,7 @@
 
 import { Response } from 'express';
 import { CertificateTemplateService } from '../services/certificate-template.service';
+import { CertificateService } from '../services/certificate.service';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { PDFGenerationOptions } from '../types/certificate-template.types';
 
@@ -376,18 +377,7 @@ res.send(pdfBuffer);
         };
       }
 
-      // Admin can access all certificates
-      if (user.role === 'admin') {
-        return { success: true, status: 200, message: 'Access granted' };
-      }
-
-      // Technician can access certificates they created
-      if (user.role === 'technician' && templateData.certificate.createdBy.id === user.id) {
-        return { success: true, status: 200, message: 'Access granted' };
-      }
-
-      // Users can view approved certificates only (if needed)
-      if (user.role === 'user' && templateData.certificate.status === 'approved') {
+      if (CertificateService.canViewCertificate(user, templateData.certificate)) {
         return { success: true, status: 200, message: 'Access granted' };
       }
 
